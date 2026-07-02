@@ -1,0 +1,1141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Dinner Wheel</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dinner Wheel">
+<meta name="theme-color" content="#FFF3CF">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<script src="firebase-config.js"></script>
+<style>
+:root{
+  --paper:#FFF3CF; --card:#FFFDF6; --ink:#3B2B1B; --muted:#94805F;
+  --tomato:#E14B32; --tomato-dk:#C23A24; --basil:#2E7D46; --saffron:#F0A62B;
+  --denim:#3E6FB0; --plum:#8A4E85; --rust:#B85C38;
+  --line:#EFDFAE; --shadow:0 2px 10px rgba(59,43,27,.08);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0; padding:0}
+body{
+  font-family:ui-rounded,-apple-system,"SF Pro Rounded","Segoe UI",system-ui,sans-serif;
+  background:var(--paper); color:var(--ink);
+  min-height:100vh; min-height:100dvh;
+  padding-bottom:calc(88px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit; border:none; cursor:pointer; color:inherit; background:none}
+input,textarea,select{font-family:inherit; font-size:16px; color:var(--ink)}
+
+/* header */
+header{
+  position:sticky; top:0; z-index:20; background:var(--paper);
+  padding:calc(10px + env(safe-area-inset-top)) 18px 8px;
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex; align-items:baseline; justify-content:space-between}
+.brand h1{margin:0; font-size:24px; font-weight:900; letter-spacing:-.3px}
+.brand h1 .dot{color:var(--tomato)}
+.weeklabel{font-size:13px; font-weight:700; color:var(--muted)}
+#modebanner{
+  display:none; margin-top:6px; font-size:12px; font-weight:700;
+  background:#FCE9D8; color:var(--rust); border-radius:8px; padding:5px 9px;
+}
+#modebanner.show{display:block}
+
+/* scoreboard */
+.scoreboard{display:flex; gap:10px; padding:12px 18px 4px}
+.player{
+  flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:10px 12px; box-shadow:var(--shadow);
+}
+.player .pname{font-weight:900; font-size:14px}
+.player .ptitle{font-size:11px; font-weight:700; color:var(--muted)}
+.player .ppts{font-size:20px; font-weight:900; font-variant-numeric:tabular-nums}
+.player.mark .pname{color:var(--denim)}
+.player.jenny .pname{color:var(--plum)}
+.player.me{outline:2px solid currentColor; outline-offset:-1px}
+.streak{
+  align-self:center; text-align:center; min-width:64px; background:var(--card);
+  border:1px solid var(--line); border-radius:14px; padding:8px 6px; box-shadow:var(--shadow);
+}
+.streak b{display:block; font-size:18px}
+.streak span{font-size:10px; font-weight:700; color:var(--muted)}
+
+main{max-width:520px; margin:0 auto}
+.view{display:none; padding:8px 18px 24px}
+body[data-tab="week"] #view-week, body[data-tab="wheel"] #view-wheel, body[data-tab="ideas"] #view-ideas{display:block}
+h2{font-size:17px; font-weight:900; margin:18px 0 10px}
+h2 small{font-weight:700; color:var(--muted); font-size:12px}
+
+/* slot count segmented */
+.seg{display:inline-flex; background:#F4E8C2; border-radius:10px; padding:3px; gap:2px}
+.seg button{padding:6px 14px; border-radius:8px; font-weight:800; font-size:13px; color:var(--muted)}
+.seg button.on{background:var(--card); color:var(--ink); box-shadow:var(--shadow)}
+.weekhead{display:flex; align-items:center; justify-content:space-between}
+
+/* slots */
+.slot{
+  background:var(--card); border:1px solid var(--line); border-radius:16px;
+  padding:14px; margin:10px 0; box-shadow:var(--shadow);
+  display:flex; align-items:center; gap:12px;
+}
+.slot.empty{border-style:dashed; background:transparent; box-shadow:none}
+.slot .emoji{font-size:30px; width:40px; text-align:center}
+.slot .body{flex:1; min-width:0}
+.slot .name{font-weight:900; font-size:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.slot .meta{font-size:12px; color:var(--muted); font-weight:700; margin-top:2px; display:flex; gap:8px; align-items:center}
+.daychip{
+  background:#F4E8C2; border-radius:7px; padding:2px 8px; font-weight:800; font-size:11px; color:var(--ink)
+}
+.slot .actions{display:flex; flex-direction:column; gap:6px; align-items:flex-end}
+.cookbtn{background:var(--basil); color:#fff; font-weight:800; font-size:12px; border-radius:9px; padding:7px 10px}
+.cookbtn.done{background:transparent; color:var(--basil); padding:4px 0}
+.rmbtn{color:var(--muted); font-size:12px; font-weight:700}
+.slot.empty .fill{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.spinlink{background:var(--tomato); color:#fff; font-weight:800; font-size:13px; border-radius:10px; padding:8px 14px}
+.picklink{color:var(--tomato); font-weight:800; font-size:13px}
+.slotlabel{font-size:11px; font-weight:800; color:var(--muted); letter-spacing:.4px}
+
+/* shop list */
+.shopcard{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:var(--shadow)}
+.shopmeal{font-size:12px; font-weight:900; color:var(--muted); margin:10px 0 4px; text-transform:uppercase; letter-spacing:.5px}
+.shopmeal:first-child{margin-top:0}
+.shopitem{display:flex; align-items:center; gap:10px; padding:6px 0; font-weight:700; font-size:15px}
+.shopitem input{width:20px; height:20px; accent-color:var(--basil)}
+.shopitem.done label{text-decoration:line-through; color:var(--muted)}
+.shopitem label{flex:1}
+.extrarow{display:flex; gap:8px; margin-top:10px}
+.extrarow input[type=text]{flex:1; border:1px solid var(--line); border-radius:10px; padding:9px 12px; background:#fff}
+.addextra{background:var(--saffron); color:var(--ink); font-weight:900; border-radius:10px; padding:0 14px}
+.shopempty{color:var(--muted); font-weight:700; font-size:14px}
+
+/* wheel */
+#wheelwrap{display:flex; flex-direction:column; align-items:center; padding-top:6px}
+#wheelbox{position:relative; width:min(86vw,340px); height:min(86vw,340px)}
+#pointer{
+  position:absolute; top:-6px; left:50%; transform:translateX(-50%); z-index:3;
+  width:0; height:0; border-left:13px solid transparent; border-right:13px solid transparent;
+  border-top:22px solid var(--ink); filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));
+}
+#wheelrot{width:100%; height:100%; transition:transform 4.2s cubic-bezier(.12,.65,.06,1)}
+@media (prefers-reduced-motion: reduce){ #wheelrot{transition-duration:.6s} }
+#wheelhub{
+  position:absolute; inset:0; margin:auto; width:64px; height:64px; border-radius:50%;
+  background:var(--card); border:3px solid var(--ink); z-index:2;
+  display:flex; align-items:center; justify-content:center; font-size:26px;
+}
+#spinbtn{
+  margin-top:20px; background:var(--tomato); color:#fff; font-size:19px; font-weight:900;
+  border-radius:16px; padding:14px 44px; box-shadow:0 4px 0 var(--tomato-dk);
+}
+#spinbtn:active{transform:translateY(2px); box-shadow:0 2px 0 var(--tomato-dk)}
+#spinbtn:disabled{opacity:.45; box-shadow:none}
+.wheelnote{margin-top:10px; font-size:13px; font-weight:700; color:var(--muted); text-align:center}
+.filters{display:flex; gap:8px; justify-content:center; margin:14px 0 4px; flex-wrap:wrap}
+.chip{
+  border:1px solid var(--line); background:var(--card); border-radius:99px;
+  padding:6px 13px; font-weight:800; font-size:13px; color:var(--muted);
+}
+.chip.on{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+
+/* ideas */
+.addcard{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:var(--shadow)}
+.addcard input[type=text], .addcard textarea{
+  width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:#fff;
+}
+.addcard textarea{margin-top:8px; min-height:64px; resize:vertical}
+.addrow{display:flex; gap:8px; margin-top:10px; align-items:center; justify-content:space-between}
+.addbtn{background:var(--tomato); color:#fff; font-weight:900; font-size:15px; border-radius:12px; padding:11px 22px}
+.ingtoggle{color:var(--muted); font-weight:700; font-size:13px; margin-top:8px}
+.idea{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:12px 14px; margin:8px 0; box-shadow:var(--shadow);
+}
+.idearow{display:flex; align-items:center; gap:12px}
+.idea .emoji{font-size:24px; width:32px; text-align:center}
+.idea .body{flex:1; min-width:0}
+.idea .name{font-weight:900; font-size:15px}
+.idea .meta{font-size:11.5px; color:var(--muted); font-weight:700; margin-top:1px}
+.idea .planbtn{background:#F4E8C2; font-weight:800; font-size:12px; border-radius:9px; padding:7px 11px; white-space:nowrap}
+.idea .planbtn:disabled{opacity:.4}
+.ideaedit{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; display:none}
+.idea.open .ideaedit{display:block}
+.ideaedit input[type=text], .ideaedit textarea{width:100%; border:1px solid var(--line); border-radius:10px; padding:9px 12px; background:#fff}
+.ideaedit textarea{margin-top:8px; min-height:56px}
+.editrow{display:flex; justify-content:space-between; margin-top:10px; align-items:center}
+.savebtn{background:var(--basil); color:#fff; font-weight:800; border-radius:10px; padding:8px 16px; font-size:13px}
+.delbtn{color:var(--tomato); font-weight:800; font-size:13px}
+.byline{font-weight:800}
+.byline.mark{color:var(--denim)} .byline.jenny{color:var(--plum)}
+.empty-ideas{color:var(--muted); font-weight:700; text-align:center; padding:26px 10px}
+
+/* tabbar */
+nav{
+  position:fixed; bottom:0; left:0; right:0; z-index:30;
+  display:flex; justify-content:center; gap:6px;
+  background:rgba(255,253,246,.94); backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+}
+nav button{
+  flex:1; max-width:150px; display:flex; flex-direction:column; align-items:center; gap:2px;
+  font-size:11px; font-weight:800; color:var(--muted); border-radius:12px; padding:7px 0;
+}
+nav button .ico{font-size:22px; line-height:1}
+body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[data-tab="ideas"] nav .t-ideas{color:var(--ink); background:#F4E8C2}
+
+/* overlays */
+.overlay{
+  position:fixed; inset:0; z-index:50; background:rgba(59,43,27,.45);
+  display:none; align-items:flex-end; justify-content:center;
+}
+.overlay.show{display:flex}
+.sheet{
+  background:var(--card); border-radius:22px 22px 0 0; width:100%; max-width:520px;
+  padding:24px 22px calc(28px + env(safe-area-inset-bottom)); text-align:center;
+}
+.sheet h3{margin:0 0 6px; font-size:20px; font-weight:900}
+.sheet p{margin:4px 0 14px; color:var(--muted); font-weight:700; font-size:14px}
+.bigemoji{font-size:56px; margin:6px 0}
+.sheetbtns{display:flex; flex-direction:column; gap:10px; margin-top:8px}
+.sheetbtns .primary{background:var(--basil); color:#fff; font-weight:900; font-size:16px; border-radius:14px; padding:14px}
+.sheetbtns .danger{background:#FCE9D8; color:var(--tomato); font-weight:900; font-size:15px; border-radius:14px; padding:13px}
+.sheetbtns .quiet{color:var(--muted); font-weight:800; padding:8px}
+.whorow{display:flex; gap:12px; margin-top:14px}
+.whorow button{
+  flex:1; border-radius:16px; padding:20px 10px; font-size:17px; font-weight:900; color:#fff;
+}
+.who-mark{background:var(--denim)} .who-jenny{background:var(--plum)}
+.keyinput{width:100%; border:1px solid var(--line); border-radius:12px; padding:12px; background:#fff; margin-bottom:10px}
+
+#toast{
+  position:fixed; left:50%; transform:translateX(-50%); bottom:calc(100px + env(safe-area-inset-bottom));
+  background:var(--ink); color:var(--paper); font-weight:800; font-size:14px;
+  padding:10px 18px; border-radius:99px; z-index:60; opacity:0; transition:opacity .25s;
+  pointer-events:none; white-space:nowrap;
+}
+#toast.show{opacity:1}
+.confetti{position:fixed; z-index:70; width:10px; height:14px; border-radius:2px; pointer-events:none; top:0; left:0}
+</style>
+</head>
+<body data-tab="week">
+
+<header>
+  <div class="brand">
+    <h1>Dinner Wheel<span class="dot">.</span></h1>
+    <span class="weeklabel" id="weeklabel"></span>
+  </div>
+  <div id="modebanner">Single-phone mode. Shared sync is off until Firebase is set up (see the README).</div>
+</header>
+
+<div class="scoreboard" id="scoreboard"></div>
+
+<main>
+  <section class="view" id="view-week">
+    <div class="weekhead">
+      <h2>This week's dinners</h2>
+      <div class="seg" id="slotseg"></div>
+    </div>
+    <div id="slots"></div>
+
+    <h2>Shopping list <small id="shopcount"></small></h2>
+    <div class="shopcard" id="shopcard"></div>
+  </section>
+
+  <section class="view" id="view-wheel">
+    <div class="filters" id="wheelfilters"></div>
+    <div id="wheelwrap">
+      <div id="wheelbox">
+        <div id="pointer"></div>
+        <div id="wheelrot"><svg id="wheelsvg" viewBox="-170 -170 340 340" width="100%" height="100%"></svg></div>
+        <div id="wheelhub">🍽️</div>
+      </div>
+      <button id="spinbtn">SPIN</button>
+      <div class="wheelnote" id="wheelnote"></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-ideas">
+    <h2>Add a meal idea <small>+2 pts</small></h2>
+    <div class="addcard">
+      <input type="text" id="newname" placeholder="e.g. Butter chicken" maxlength="40">
+      <div class="addrow">
+        <div class="seg" id="neweffort"></div>
+        <button class="addbtn" id="addbtn">Add</button>
+      </div>
+      <button class="ingtoggle" id="ingtoggle">+ add ingredients (for the shop list)</button>
+      <textarea id="newings" placeholder="One ingredient per line" style="display:none"></textarea>
+    </div>
+    <h2>The idea bank <small id="bankcount"></small></h2>
+    <div id="ideas"></div>
+  </section>
+</main>
+
+<nav>
+  <button class="t-week" data-tab="week"><span class="ico">🍽️</span>This week</button>
+  <button class="t-wheel" data-tab="wheel"><span class="ico">🎡</span>Wheel</button>
+  <button class="t-ideas" data-tab="ideas"><span class="ico">💡</span>Ideas</button>
+</nav>
+
+<div class="overlay" id="who-overlay">
+  <div class="sheet">
+    <h3>Whose phone is this?</h3>
+    <p>Just once, so the app knows who's adding what.</p>
+    <div class="whorow">
+      <button class="who-mark" data-who="mark">Mark 🧑‍🍳</button>
+      <button class="who-jenny" data-who="jenny">Jenny 👩‍🍳</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="key-overlay">
+  <div class="sheet">
+    <h3>Kitchen code</h3>
+    <p>Open the link Mark sent (it has the code built in), or paste the link or code here.</p>
+    <input class="keyinput" type="text" id="keyinput" placeholder="Paste link or code">
+    <div class="sheetbtns"><button class="primary" id="keysave">Let's cook</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="result-overlay">
+  <div class="sheet">
+    <div class="bigemoji" id="res-emoji"></div>
+    <h3 id="res-title"></h3>
+    <p id="res-sub"></p>
+    <div class="sheetbtns">
+      <button class="primary" id="res-ok">Love it</button>
+      <button class="danger" id="res-veto"></button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- constants ---------- */
+var PTS = { ADD:2, COOK:3, WEEK:5 };
+var EFFORTS = ['quick','normal','fancy'];
+var EFFORT_ICON = { quick:'🟢', normal:'🟡', fancy:'🔴' };
+var WEDGE = ['#E14B32','#F0A62B','#2E7D46','#3E6FB0','#8A4E85','#B85C38'];
+var TITLES = [[80,'MasterChef'],[40,'Head Chef'],[15,'Sous Chef'],[0,'Kitchen Rookie']];
+var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+var RECENT_MS = 14*24*60*60*1000;
+var NAMES = { mark:'Mark', jenny:'Jenny', wheel:'the wheel' };
+
+var EMOJI_MAP = [
+  ['taco','🌮'],['burrito','🌯'],['pasta','🍝'],['spag','🍝'],['bolog','🍝'],['lasag','🍝'],
+  ['pizza','🍕'],['curry','🍛'],['butter chicken','🍛'],['stir','🥡'],['noodle','🍜'],['ramen','🍜'],
+  ['pho','🍜'],['soup','🍲'],['stew','🍲'],['salad','🥗'],['burger','🍔'],['fish','🐟'],
+  ['salmon','🐟'],['prawn','🍤'],['shrimp','🍤'],['sushi','🍣'],['rice','🍚'],['fried rice','🍚'],
+  ['chicken','🍗'],['wing','🍗'],['steak','🥩'],['beef','🥩'],['lamb','🍖'],['pork','🥓'],
+  ['schnitz','🍗'],['roast','🍖'],['bbq','🍖'],['sausage','🌭'],['hot dog','🌭'],['egg','🍳'],
+  ['omelet','🍳'],['pancake','🥞'],['wrap','🌯'],['kebab','🥙'],['falafel','🧆'],['dumpling','🥟'],
+  ['gyoza','🥟'],['pie','🥧'],['quiche','🥧'],['sandwich','🥪'],['toast','🥪'],['nacho','🧀'],
+  ['chili','🌶️'],['tofu','🥦'],['veg','🥦'],['potato','🥔'],['gnocchi','🥔'],['risotto','🍚'],
+  ['paella','🥘'],['bake','🥘'],['casserole','🥘'],['pad thai','🍜'],['bibimbap','🍚'],['poke','🍣']
+];
+
+var SEED_IDEAS = [
+  ['Spag bol','🍝','normal'], ['Tacos','🌮','quick'], ['Chicken stir fry','🥡','quick'],
+  ['Butter chicken','🍛','normal'], ['Salmon and veg','🐟','quick'], ['Homemade pizza','🍕','fancy']
+];
+
+/* ---------- state ---------- */
+var state = null;
+var user = localStorage.getItem('dw-user') || '';
+var wheelState = { spinning:false, candidates:[], angle:0, effort:'', includeRecent:false, excludeId:null };
+var pendingResult = null;   // {ideaId, slotIdx}
+var rolling = false;
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function weekKey(d){
+  var x = d ? new Date(d) : new Date();
+  x = new Date(x.getFullYear(), x.getMonth(), x.getDate());
+  var wd = (x.getDay()+6)%7;
+  x.setDate(x.getDate()-wd);
+  return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
+}
+function weekLabel(key){
+  var p = key.split('-');
+  var d = new Date(+p[0], +p[1]-1, +p[2]);
+  return 'Week of ' + d.getDate() + ' ' + d.toLocaleDateString('en-AU',{month:'short'});
+}
+
+function freshWeek(slotCount){
+  return { key: weekKey(), slotCount: slotCount||3 };
+}
+function seedState(){
+  var ideas = {};
+  SEED_IDEAS.forEach(function(s,i){
+    ideas['seed'+i] = { name:s[0], emoji:s[1], effort:s[2], ings:'', by:'wheel', at:Date.now(), cooked:0, last:0 };
+  });
+  return { ideas:ideas, week:freshWeek(3), scores:{mark:0,jenny:0}, streak:{count:0,lastKey:''} };
+}
+
+/* safe getters (Firebase drops empty nodes) */
+function ideas(){ return (state && state.ideas) || {}; }
+function week(){ return (state && state.week) || freshWeek(3); }
+function slots(){ return week().slots || {}; }
+function slot(i){ return slots()[String(i)] || null; }
+function scores(){ return (state && state.scores) || {mark:0,jenny:0}; }
+function shop(){ return week().shop || {}; }
+function extras(){ return week().extras || {}; }
+function vetoUsed(who){ return !!(week().veto && week().veto[who]); }
+function plannedIds(){
+  var w = week(), out = {};
+  for (var i=0;i<w.slotCount;i++){ var s=slot(i); if (s && s.ideaId) out[s.ideaId]=true; }
+  return out;
+}
+function slotFilled(i){
+  var s = slot(i);
+  return !!(s && s.ideaId && ideas()[s.ideaId]);  // a deleted idea leaves the slot re-fillable
+}
+function nextEmpty(){
+  var w = week();
+  for (var i=0;i<w.slotCount;i++){ if (!slotFilled(i)) return i; }
+  return -1;
+}
+
+/* ---------- storage ---------- */
+var Store = { mode:'local', ref:null };
+
+function applyLocalPatch(obj){
+  Object.keys(obj).forEach(function(path){
+    var parts = path.split('/'), node = state;
+    for (var i=0;i<parts.length-1;i++){
+      if (typeof node[parts[i]] !== 'object' || node[parts[i]] === null) node[parts[i]] = {};
+      node = node[parts[i]];
+    }
+    var leaf = parts[parts.length-1];
+    if (obj[path] === null) delete node[leaf];
+    else node[leaf] = obj[path];
+  });
+}
+
+Store.patch = function(obj){
+  if (Store.mode === 'cloud' && Store.ref){
+    Store.ref.update(obj);   // local events fire immediately (latency compensation)
+  } else {
+    applyLocalPatch(obj);
+    localStorage.setItem('dw-state', JSON.stringify(state));
+    render();
+  }
+};
+
+function houseKey(){
+  var m = (location.hash||'').match(/k=([A-Za-z0-9_-]{8,})/);
+  if (m){ localStorage.setItem('dw-key', m[1]); }
+  return localStorage.getItem('dw-key') || '';
+}
+
+function loadScript(src){
+  return new Promise(function(res, rej){
+    var s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+function initCloud(key){
+  return loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js')
+    .then(function(){ return loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js'); })
+    .then(function(){
+      firebase.initializeApp(window.FIREBASE_CONFIG);
+      Store.ref = firebase.database().ref('mealwheel/'+key);
+      Store.mode = 'cloud';
+      return new Promise(function(res){
+        var first = true;
+        Store.ref.on('value', function(snap){
+          var v = snap.val();
+          if (!v){
+            // brand-new database: seed it (or migrate local data if we have some)
+            var local = null;
+            try { local = JSON.parse(localStorage.getItem('dw-state')||'null'); } catch(e){}
+            localStorage.setItem('dw-merged','1');
+            Store.ref.set(local || seedState());
+            return;
+          }
+          if (first){ first = false; mergeLocalIdeas(v); }
+          state = v;
+          localStorage.setItem('dw-state', JSON.stringify(state));
+          document.getElementById('modebanner').classList.remove('show');
+          res();
+          rolloverIfNeeded();
+          render();
+        });
+      });
+    });
+}
+
+/* Joining a shared database that already has data: keep this phone's own
+   ideas too (union by id) instead of silently dropping them. One-time. */
+function mergeLocalIdeas(cloud){
+  if (localStorage.getItem('dw-merged')) return;
+  localStorage.setItem('dw-merged','1');
+  var local = null;
+  try { local = JSON.parse(localStorage.getItem('dw-state')||'null'); } catch(e){}
+  if (!local || !local.ideas) return;
+  var have = (cloud && cloud.ideas) || {};
+  var patch = {};
+  Object.keys(local.ideas).forEach(function(id){
+    if (!have[id]) patch['ideas/'+id] = local.ideas[id];
+  });
+  if (Object.keys(patch).length) Store.ref.update(patch);
+}
+
+function initLocal(){
+  try { state = JSON.parse(localStorage.getItem('dw-state')||'null'); } catch(e){ state = null; }
+  if (!state) state = seedState();
+  localStorage.setItem('dw-state', JSON.stringify(state));
+  document.getElementById('modebanner').classList.add('show');
+  return Promise.resolve();
+}
+
+/* ---------- week rollover ---------- */
+function rolloverIfNeeded(){
+  if (!state || rolling) return;
+  var w = week(), nowKey = weekKey();
+  if (w.key === nowKey) return;
+  rolling = true;
+  var full = true;
+  for (var i=0;i<w.slotCount;i++){ var s=slot(i); if (!s || !s.ideaId) { full=false; break; } }
+  var st = (state.streak && typeof state.streak.count==='number') ? state.streak : {count:0,lastKey:''};
+  /* streak only continues if the full week was the one immediately before this one */
+  var np = nowKey.split('-');
+  var prevMon = weekKey(new Date(+np[0], +np[1]-1, +np[2]-7));
+  var newCount = full ? ((w.key === prevMon ? st.count : 0) + 1) : 0;
+  Store.patch({
+    'week': freshWeek(w.slotCount),
+    'streak': { count:newCount, lastKey:w.key }
+  });
+  rolling = false;
+  if (full) toast('Last week fully planned. Streak: '+newCount+' 🔥');
+}
+
+/* ---------- helpers ---------- */
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function pickEmoji(name){
+  var n = name.toLowerCase();
+  for (var i=0;i<EMOJI_MAP.length;i++){ if (n.indexOf(EMOJI_MAP[i][0]) !== -1) return EMOJI_MAP[i][1]; }
+  return '🍽️';
+}
+function titleFor(pts){
+  for (var i=0;i<TITLES.length;i++){ if (pts >= TITLES[i][0]) return TITLES[i][1]; }
+  return TITLES[TITLES.length-1][1];
+}
+function award(who, pts, why){
+  if (!who || who==='wheel') return;
+  var cur = scores()[who] || 0;
+  Store.patch({ ['scores/'+who]: cur + pts });
+  toast('+'+pts+' '+NAMES[who]+' · '+why);
+}
+function agoLabel(ts){
+  if (!ts) return 'never cooked';
+  var days = Math.floor((Date.now()-ts)/86400000);
+  if (days<1) return 'cooked today';
+  if (days<7) return days+'d ago';
+  return Math.floor(days/7)+'w ago';
+}
+var toastTimer = null;
+function toast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+function confetti(big){
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var n = big ? 34 : 16;
+  for (var i=0;i<n;i++){
+    var el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.background = WEDGE[i % WEDGE.length];
+    document.body.appendChild(el);
+    var x0 = window.innerWidth/2, y0 = window.innerHeight*0.3;
+    var dx = (Math.random()-0.5)*window.innerWidth*0.9;
+    var dy = window.innerHeight*(0.5+Math.random()*0.4);
+    var rot = (Math.random()-0.5)*720;
+    var anim = el.animate([
+      { transform:'translate('+x0+'px,'+y0+'px) rotate(0deg)', opacity:1 },
+      { transform:'translate('+(x0+dx)+'px,'+(y0+dy)+'px) rotate('+rot+'deg)', opacity:0 }
+    ], { duration: 900+Math.random()*700, easing:'cubic-bezier(.15,.6,.4,1)' });
+    anim.onfinish = (function(node){ return function(){ node.remove(); }; })(el);
+  }
+}
+
+/* ---------- render ---------- */
+function render(){
+  if (!state) return;
+  renderHeader(); renderWeek(); renderWheel(); renderIdeas();
+}
+
+function renderHeader(){
+  document.getElementById('weeklabel').textContent = weekLabel(week().key);
+  var sc = scores();
+  var st = (state.streak && state.streak.count) || 0;
+  var html = '';
+  ['mark','jenny'].forEach(function(p){
+    var pts = sc[p]||0;
+    html += '<div class="player '+p+(user===p?' me':'')+'">'
+      + '<div class="pname">'+NAMES[p]+'</div>'
+      + '<div class="ppts">'+pts+'</div>'
+      + '<div class="ptitle">'+titleFor(pts)+'</div></div>';
+  });
+  html += '<div class="streak"><b>'+st+'🔥</b><span>week streak</span></div>';
+  document.getElementById('scoreboard').innerHTML = html;
+}
+
+function renderWeek(){
+  var w = week();
+
+  /* a sync update from the other phone mustn't wipe half-typed extras */
+  var exEl = document.getElementById('extrainput');
+  var exVal = exEl ? exEl.value : '';
+  var exFocus = exEl && document.activeElement === exEl;
+
+  /* slot count segmented */
+  var seg = '';
+  [2,3,4].forEach(function(n){
+    seg += '<button data-n="'+n+'" class="'+(w.slotCount===n?'on':'')+'">'+n+'</button>';
+  });
+  document.getElementById('slotseg').innerHTML = seg;
+
+  /* slots */
+  var html = '';
+  for (var i=0;i<w.slotCount;i++){
+    var s = slot(i);
+    var idea = s && s.ideaId ? ideas()[s.ideaId] : null;
+    if (idea){
+      var day = s.day ? s.day : 'any day';
+      html += '<div class="slot" data-i="'+i+'">'
+        + '<div class="emoji">'+esc(idea.emoji)+'</div>'
+        + '<div class="body">'
+        +   '<div class="slotlabel">MEAL '+(i+1)+'</div>'
+        +   '<div class="name">'+esc(idea.name)+'</div>'
+        +   '<div class="meta"><button class="daychip" data-act="day" data-i="'+i+'">'+esc(day)+'</button>'
+        +   '<span>'+EFFORT_ICON[idea.effort||'normal']+' '+esc(idea.effort||'normal')+'</span></div>'
+        + '</div>'
+        + '<div class="actions">'
+        +   (s.cooked
+              ? '<button class="cookbtn done">Cooked 🎉</button>'
+              : '<button class="cookbtn" data-act="cook" data-i="'+i+'">Cooked it ✓</button>')
+        +   '<button class="rmbtn" data-act="remove" data-i="'+i+'">swap out</button>'
+        + '</div></div>';
+    } else {
+      html += '<div class="slot empty" data-i="'+i+'">'
+        + '<div class="body"><div class="slotlabel">MEAL '+(i+1)+'</div>'
+        + '<div class="fill" style="margin-top:6px">'
+        +   '<button class="spinlink" data-act="gospin">🎡 Spin for it</button>'
+        +   '<button class="picklink" data-act="gopick">or pick one</button>'
+        + '</div></div></div>';
+    }
+  }
+  document.getElementById('slots').innerHTML = html;
+
+  /* shop list */
+  var w2 = week(), items = [], done = 0;
+  for (var j=0;j<w2.slotCount;j++){
+    var sj = slot(j);
+    var ij = sj && sj.ideaId ? ideas()[sj.ideaId] : null;
+    if (!ij || !ij.ings) continue;
+    var lines = ij.ings.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+    if (!lines.length) continue;
+    /* keyed by ideaId, not slot position, so ticks survive slot swaps */
+    items.push({ meal: ij.emoji+' '+ij.name, lines: lines.map(function(l,li){ return { key: sj.ideaId+'_'+li, label:l }; }) });
+  }
+  var ex = extras();
+  var shopHtml = '';
+  items.forEach(function(grp){
+    shopHtml += '<div class="shopmeal">'+esc(grp.meal)+'</div>';
+    grp.lines.forEach(function(it){
+      var ck = !!shop()[it.key]; if (ck) done++;
+      shopHtml += '<div class="shopitem'+(ck?' done':'')+'"><input type="checkbox" id="sh_'+it.key+'" data-act="shopck" data-key="'+it.key+'" '+(ck?'checked':'')+'><label for="sh_'+it.key+'">'+esc(it.label)+'</label></div>';
+    });
+  });
+  var exKeys = Object.keys(ex);
+  if (exKeys.length){
+    shopHtml += '<div class="shopmeal">➕ Extras</div>';
+    exKeys.forEach(function(k){
+      var it = ex[k]; var ck = !!it.done; if (ck) done++;
+      shopHtml += '<div class="shopitem'+(ck?' done':'')+'"><input type="checkbox" id="ex_'+k+'" data-act="extrack" data-key="'+k+'" '+(ck?'checked':'')+'><label for="ex_'+k+'">'+esc(it.name)+'</label></div>';
+    });
+  }
+  if (!shopHtml) shopHtml = '<div class="shopempty">Plan some meals (with ingredients on the idea) and the shop list builds itself.</div>';
+  shopHtml += '<div class="extrarow"><input type="text" id="extrainput" placeholder="Add extra item (milk, bread...)" maxlength="40"><button class="addextra" data-act="addextra">Add</button></div>';
+  document.getElementById('shopcard').innerHTML = shopHtml;
+  var exEl2 = document.getElementById('extrainput');
+  if (exEl2 && exVal) exEl2.value = exVal;
+  if (exEl2 && exFocus) exEl2.focus();
+  var total = items.reduce(function(a,g){return a+g.lines.length;},0) + exKeys.length;
+  document.getElementById('shopcount').textContent = total ? (done+'/'+total+' in the trolley') : '';
+}
+
+/* ---------- wheel ---------- */
+function wheelCandidates(){
+  var planned = plannedIds();
+  var all = Object.keys(ideas()).map(function(id){ var o = ideas()[id]; return { id:id, idea:o }; });
+  var pool = all.filter(function(e){
+    if (planned[e.id]) return false;
+    if (wheelState.excludeId === e.id) return false;   // just-vetoed meal sits the respin out
+    if (wheelState.effort && (e.idea.effort||'normal') !== wheelState.effort) return false;
+    if (!wheelState.includeRecent && e.idea.last && (Date.now()-e.idea.last) < RECENT_MS) return false;
+    return true;
+  });
+  var totalPool = pool.length;
+  if (pool.length > 12){
+    pool.sort(function(a,b){ return (a.idea.last||0)-(b.idea.last||0); });
+    pool = pool.slice(0,12);
+  }
+  pool.totalPool = totalPool;
+  return pool;
+}
+
+function renderWheel(){
+  /* filters */
+  var f = '<button class="chip '+(wheelState.effort===''?'on':'')+'" data-eff="">all</button>';
+  EFFORTS.forEach(function(e){
+    f += '<button class="chip '+(wheelState.effort===e?'on':'')+'" data-eff="'+e+'">'+EFFORT_ICON[e]+' '+e+'</button>';
+  });
+  f += '<button class="chip '+(wheelState.includeRecent?'on':'')+'" data-act="recent">include recent</button>';
+  document.getElementById('wheelfilters').innerHTML = f;
+
+  // don't rebuild mid-spin, and keep the winning layout visible under the result sheet
+  if (wheelState.spinning || document.getElementById('result-overlay').classList.contains('show')) return;
+
+  var cands = wheelCandidates();
+  wheelState.candidates = cands;
+  var svg = document.getElementById('wheelsvg');
+  var n = cands.length;
+  var note = document.getElementById('wheelnote');
+  var btn = document.getElementById('spinbtn');
+  var empty = nextEmpty();
+
+  if (n < 2){
+    svg.innerHTML = '<circle r="160" fill="#F4E8C2"/><text y="6" text-anchor="middle" font-size="15" font-weight="800" fill="#94805F">Need at least 2 ideas to spin</text>';
+    btn.disabled = true;
+    note.textContent = 'Add more meal ideas (or include recent ones) to fill the wheel.';
+    return;
+  }
+  if (empty === -1){
+    btn.disabled = true;
+    note.textContent = 'Week is full. Nice work — see you next week.';
+  } else {
+    btn.disabled = false;
+    var mine = vetoUsed(user) ? 'used' : 'ready';
+    note.textContent = 'Spin locks the meal into slot '+(empty+1)+'. Your veto: '+mine
+      + (cands.totalPool > n ? ' · showing '+n+' of '+cands.totalPool : '');
+  }
+
+  var wA = 360/n, parts = '';
+  for (var i=0;i<n;i++){
+    var a0 = (i*wA - 90) * Math.PI/180, a1 = ((i+1)*wA - 90) * Math.PI/180;
+    var R = 160;
+    var x1 = R*Math.cos(a0), y1 = R*Math.sin(a0), x2 = R*Math.cos(a1), y2 = R*Math.sin(a1);
+    var color = WEDGE[i % WEDGE.length];
+    if (i === n-1 && n % WEDGE.length === 1 && n > 1) color = WEDGE[2]; // avoid same color touching wedge 0
+    parts += '<path d="M0,0 L'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+R+','+R+' 0 '+(wA>180?1:0)+',1 '+x2.toFixed(1)+','+y2.toFixed(1)+' Z" fill="'+color+'" stroke="#FFFDF6" stroke-width="2"/>';
+    var mid = i*wA + wA/2;
+    var midRad = (mid-90)*Math.PI/180;
+    var tr = 100, tx = tr*Math.cos(midRad), ty = tr*Math.sin(midRad);
+    var label = cands[i].idea.name;
+    var fs = n<=6 ? 14 : (n<=9 ? 12 : 10.5);
+    var maxCh = n<=6 ? 16 : 13;
+    if (label.length > maxCh) label = Array.from(label).slice(0,maxCh-1).join('')+'…';
+    parts += '<text x="'+tx.toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" dominant-baseline="middle" font-size="'+fs+'" font-weight="800" fill="#FFFDF6" transform="rotate('+mid.toFixed(1)+' '+tx.toFixed(1)+' '+ty.toFixed(1)+')">'+esc(cands[i].idea.emoji)+' '+esc(label)+'</text>';
+  }
+  svg.innerHTML = parts;
+  document.getElementById('wheelrot').style.transform = 'rotate('+wheelState.angle+'deg)';
+}
+
+function spin(){
+  if (wheelState.spinning) return;
+  var cands = wheelState.candidates;
+  var slotIdx = nextEmpty();
+  if (cands.length < 2 || slotIdx === -1) return;
+  wheelState.spinning = true;
+  document.getElementById('spinbtn').disabled = true;
+
+  var n = cands.length, wA = 360/n;
+  var pick = Math.floor(Math.random()*n);
+  var jitter = (Math.random()-0.5) * wA * 0.6;
+  var current = wheelState.angle % 360;
+  var target = wheelState.angle - current           // back to 0
+    + 360*5                                          // five full turns
+    + (360 - (pick*wA + wA/2)) + jitter;             // land pointer on pick
+  wheelState.angle = target;
+  var rot = document.getElementById('wheelrot');
+  rot.style.transform = 'rotate('+target+'deg)';
+
+  var chosen = cands[pick];
+  var fallback = setTimeout(done, 4600);   // in case transitionend never fires
+  rot.addEventListener('transitionend', done, { once:true });
+
+  function done(){
+    clearTimeout(fallback);
+    /* if the fallback fired, the once-listener is still attached and would
+       replay this spin's stale closure during the NEXT spin — detach it */
+    rot.removeEventListener('transitionend', done);
+    if (!wheelState.spinning) return;
+    wheelState.spinning = false;
+    /* re-check: the other phone may have filled the slot, planned this idea,
+       or deleted it while the wheel was spinning */
+    var idx = nextEmpty();
+    if (idx === -1 || !ideas()[chosen.id] || plannedIds()[chosen.id]){
+      toast('Plans changed mid-spin — spin again');
+      renderWheel();
+      return;
+    }
+    lockIn(chosen.id, idx, true);
+  }
+}
+
+function lockIn(ideaId, slotIdx, fromSpin){
+  var w = week();
+  var wasLast = true;
+  for (var i=0;i<w.slotCount;i++){
+    if (i !== slotIdx && !slotFilled(i)){ wasLast = false; break; }
+  }
+  var bonus = wasLast && !w.bonus;   // +5 only once per week (veto/swap can't farm it)
+  var idea = ideas()[ideaId];
+  if (fromSpin){
+    /* show the sheet BEFORE patching so the render it triggers leaves the
+       winning wheel layout frozen underneath (renderWheel skips while open) */
+    pendingResult = { ideaId: ideaId, slotIdx: slotIdx };
+    document.getElementById('res-emoji').textContent = idea ? idea.emoji : '🍽️';
+    document.getElementById('res-title').textContent = idea ? idea.name : '';
+    document.getElementById('res-sub').textContent = 'Locked into Meal '+(slotIdx+1)+'.'+(bonus?' That\'s the week planned! +'+PTS.WEEK+' pts.':(wasLast?' That\'s the week planned!':''));
+    var veto = document.getElementById('res-veto');
+    if (user && !vetoUsed(user)){
+      veto.style.display = '';
+      veto.textContent = 'Veto it (your 1 for the week)';
+    } else {
+      veto.style.display = 'none';
+    }
+    document.getElementById('result-overlay').classList.add('show');
+  }
+  var patch = {};
+  patch['week/slots/'+slotIdx] = { ideaId: ideaId };
+  if (bonus) patch['week/bonus'] = true;
+  Store.patch(patch);
+  wheelState.excludeId = null;
+  confetti(wasLast);
+  if (bonus) award(user, PTS.WEEK, 'week fully planned!');
+  if (!fromSpin) toast((idea?idea.name:'Meal')+' → Meal '+(slotIdx+1));
+  render();
+}
+
+/* ---------- ideas ---------- */
+var newEffort = 'normal';
+function renderIdeas(){
+  var seg = '';
+  EFFORTS.forEach(function(e){
+    seg += '<button data-eff="'+e+'" class="'+(newEffort===e?'on':'')+'">'+EFFORT_ICON[e]+' '+e+'</button>';
+  });
+  document.getElementById('neweffort').innerHTML = seg;
+
+  /* a sync update from the other phone mustn't close an open edit panel or wipe typing */
+  var openEdits = {};
+  document.querySelectorAll('#ideas .idea.open').forEach(function(c){
+    openEdits[c.dataset.id] = {
+      name: c.querySelector('.e-name').value,
+      ings: c.querySelector('.e-ings').value
+    };
+  });
+  var af = document.activeElement;
+  var refocus = null;
+  if (af && (af.classList.contains('e-name') || af.classList.contains('e-ings'))){
+    var afCard = af.closest('.idea');
+    if (afCard) refocus = { id: afCard.dataset.id, cls: af.classList.contains('e-name') ? 'e-name' : 'e-ings', s: af.selectionStart, e: af.selectionEnd };
+  }
+
+  var list = Object.keys(ideas()).map(function(id){ return { id:id, idea:ideas()[id] }; });
+  list.sort(function(a,b){ return (b.idea.at||0)-(a.idea.at||0); });
+  document.getElementById('bankcount').textContent = list.length ? list.length+' ideas' : '';
+  var planned = plannedIds();
+  var canPlan = nextEmpty() !== -1;
+  var html = '';
+  list.forEach(function(e){
+    var o = e.idea;
+    var by = o.by||'wheel';
+    var meta = '<span class="byline '+esc(by)+'">'+esc(NAMES[by]||by)+'</span> · '+EFFORT_ICON[o.effort||'normal']
+      + ' · ' + (o.cooked ? 'cooked '+o.cooked+'× · '+agoLabel(o.last) : 'never cooked');
+    var inWeek = planned[e.id];
+    html += '<div class="idea" data-id="'+e.id+'">'
+      + '<div class="idearow">'
+      +   '<div class="emoji">'+esc(o.emoji)+'</div>'
+      +   '<div class="body" data-act="toggle"><div class="name">'+esc(o.name)+'</div><div class="meta">'+meta+'</div></div>'
+      +   (inWeek
+            ? '<button class="planbtn" disabled>on the menu</button>'
+            : '<button class="planbtn" data-act="plan" '+(canPlan?'':'disabled')+'>+ this week</button>')
+      + '</div>'
+      + '<div class="ideaedit">'
+      +   '<input type="text" class="e-name" value="'+esc(o.name)+'" maxlength="40">'
+      +   '<textarea class="e-ings" placeholder="One ingredient per line">'+esc(o.ings||'')+'</textarea>'
+      +   '<div class="editrow"><button class="delbtn" data-act="del">Delete</button>'
+      +   '<button class="savebtn" data-act="save">Save</button></div>'
+      + '</div></div>';
+  });
+  document.getElementById('ideas').innerHTML = html || '<div class="empty-ideas">No ideas yet. Add the first one and grab '+PTS.ADD+' points.</div>';
+
+  Object.keys(openEdits).forEach(function(id){
+    var c = document.querySelector('#ideas .idea[data-id="'+id+'"]');
+    if (!c) return;
+    c.classList.add('open');
+    c.querySelector('.e-name').value = openEdits[id].name;
+    c.querySelector('.e-ings').value = openEdits[id].ings;
+  });
+  if (refocus){
+    var rc = document.querySelector('#ideas .idea[data-id="'+refocus.id+'"] .'+refocus.cls);
+    if (rc){ rc.focus(); try { rc.setSelectionRange(refocus.s, refocus.e); } catch(e){} }
+  }
+}
+
+function addIdea(){
+  var nameEl = document.getElementById('newname');
+  var name = nameEl.value.trim();
+  if (!name){ nameEl.focus(); return; }
+  var ings = document.getElementById('newings').value.trim();
+  var id = uid();
+  Store.patch({ ['ideas/'+id]: {
+    name:name, emoji:pickEmoji(name), effort:newEffort, ings:ings,
+    by:user||'wheel', at:Date.now(), cooked:0, last:0
+  }});
+  nameEl.value=''; document.getElementById('newings').value='';
+  award(user, PTS.ADD, 'new idea');
+}
+
+/* ---------- events ---------- */
+document.querySelector('nav').addEventListener('click', function(ev){
+  var b = ev.target.closest('button[data-tab]');
+  if (b) document.body.dataset.tab = b.dataset.tab;
+});
+
+document.getElementById('slotseg').addEventListener('click', function(ev){
+  var b = ev.target.closest('button[data-n]');
+  if (!b) return;
+  var n = +b.dataset.n;
+  var patch = { 'week/slotCount': n };
+  for (var i=n;i<8;i++){ if (slot(i)) patch['week/slots/'+i] = null; }  // no zombie slots on regrow
+  Store.patch(patch);
+});
+
+document.getElementById('view-week').addEventListener('click', function(ev){
+  var b = ev.target.closest('[data-act]');
+  if (!b) return;
+  var act = b.dataset.act, i = +b.dataset.i;
+  if (act === 'gospin'){ document.body.dataset.tab = 'wheel'; }
+  else if (act === 'gopick'){ document.body.dataset.tab = 'ideas'; }
+  else if (act === 'day'){
+    var s = slot(i); if (!s) return;
+    var cur = s.day ? DAYS.indexOf(s.day) : -1;
+    var next = cur+1 >= DAYS.length ? null : DAYS[cur+1];
+    Store.patch({ ['week/slots/'+i+'/day']: next });
+  }
+  else if (act === 'cook'){
+    var s2 = slot(i); if (!s2 || !s2.ideaId || s2.cooked) return;
+    var idea = ideas()[s2.ideaId];
+    var patch = {};
+    patch['week/slots/'+i+'/cooked'] = true;
+    if (idea){
+      patch['ideas/'+s2.ideaId+'/cooked'] = (idea.cooked||0)+1;
+      patch['ideas/'+s2.ideaId+'/last'] = Date.now();
+    }
+    Store.patch(patch);
+    confetti(false);
+    award(user, PTS.COOK, 'dinner cooked');
+  }
+  else if (act === 'remove'){
+    Store.patch({ ['week/slots/'+i]: null });
+  }
+  else if (act === 'addextra'){
+    var inp = document.getElementById('extrainput');
+    var v = inp.value.trim(); if (!v) return;
+    Store.patch({ ['week/extras/'+uid()]: { name:v, done:false } });
+  }
+});
+document.getElementById('view-week').addEventListener('keydown', function(ev){
+  if (ev.key === 'Enter' && ev.target.id === 'extrainput'){
+    var btn = document.querySelector('[data-act="addextra"]');
+    if (btn) btn.click();
+  }
+});
+document.getElementById('view-week').addEventListener('change', function(ev){
+  var b = ev.target.closest('[data-act]');
+  if (!b) return;
+  if (b.dataset.act === 'shopck'){
+    Store.patch({ ['week/shop/'+b.dataset.key]: b.checked ? true : null });
+  } else if (b.dataset.act === 'extrack'){
+    Store.patch({ ['week/extras/'+b.dataset.key+'/done']: b.checked });
+  }
+});
+
+document.getElementById('wheelfilters').addEventListener('click', function(ev){
+  var b = ev.target.closest('button');
+  if (!b || wheelState.spinning) return;
+  if (b.dataset.act === 'recent') wheelState.includeRecent = !wheelState.includeRecent;
+  else if (b.dataset.eff !== undefined) wheelState.effort = b.dataset.eff;
+  renderWheel();
+});
+document.getElementById('spinbtn').addEventListener('click', spin);
+
+document.getElementById('res-ok').addEventListener('click', function(){
+  document.getElementById('result-overlay').classList.remove('show');
+  pendingResult = null;
+  renderWheel();
+});
+document.getElementById('res-veto').addEventListener('click', function(){
+  if (!pendingResult || !user || vetoUsed(user)) return;
+  var pr = pendingResult; pendingResult = null;
+  wheelState.excludeId = pr.ideaId;   // don't re-land the meal they just vetoed
+  Store.patch({ ['week/slots/'+pr.slotIdx]: null, ['week/veto/'+user]: true });
+  document.getElementById('result-overlay').classList.remove('show');
+  setTimeout(function(){
+    renderWheel();
+    if (wheelState.candidates.length < 2 || nextEmpty() === -1){
+      toast('Vetoed. Not enough meals left to respin — pick one from Ideas.');
+      return;
+    }
+    toast('Vetoed. Spinning again...');
+    spin();
+  }, 500);
+});
+
+document.getElementById('neweffort').addEventListener('click', function(ev){
+  var b = ev.target.closest('button[data-eff]');
+  if (!b) return;
+  newEffort = b.dataset.eff;
+  renderIdeas();
+});
+document.getElementById('addbtn').addEventListener('click', addIdea);
+document.getElementById('newname').addEventListener('keydown', function(ev){
+  if (ev.key === 'Enter') addIdea();
+});
+document.getElementById('ingtoggle').addEventListener('click', function(){
+  var t = document.getElementById('newings');
+  var showing = t.style.display !== 'none';
+  t.style.display = showing ? 'none' : 'block';
+  this.textContent = showing ? '+ add ingredients (for the shop list)' : '– hide ingredients';
+});
+
+document.getElementById('ideas').addEventListener('click', function(ev){
+  var card = ev.target.closest('.idea');
+  if (!card) return;
+  var id = card.dataset.id;
+  var b = ev.target.closest('[data-act]');
+  if (!b) return;
+  var act = b.dataset.act;
+  if (act === 'toggle'){ card.classList.toggle('open'); }
+  else if (act === 'plan'){
+    var idx = nextEmpty();
+    if (idx === -1) return;
+    lockIn(id, idx, false);
+  }
+  else if (act === 'save'){
+    var name = card.querySelector('.e-name').value.trim();
+    var ings = card.querySelector('.e-ings').value.trim();
+    if (!name) return;
+    Store.patch({
+      ['ideas/'+id+'/name']: name,
+      ['ideas/'+id+'/emoji']: pickEmoji(name),
+      ['ideas/'+id+'/ings']: ings
+    });
+    card.classList.remove('open');
+  }
+  else if (act === 'del'){
+    if (!confirm('Delete this idea?')) return;
+    var patch = {}; patch['ideas/'+id] = null;
+    /* also clear it from any slot */
+    var w = week();
+    for (var i=0;i<w.slotCount;i++){ var s=slot(i); if (s && s.ideaId===id) patch['week/slots/'+i]=null; }
+    Store.patch(patch);
+  }
+});
+
+document.getElementById('who-overlay').addEventListener('click', function(ev){
+  var b = ev.target.closest('button[data-who]');
+  if (!b) return;
+  user = b.dataset.who;
+  localStorage.setItem('dw-user', user);
+  document.getElementById('who-overlay').classList.remove('show');
+  render();
+});
+
+document.getElementById('keyinput').addEventListener('keydown', function(ev){
+  if (ev.key === 'Enter') document.getElementById('keysave').click();
+});
+document.getElementById('keysave').addEventListener('click', function(){
+  var v = document.getElementById('keyinput').value.trim();
+  var m = v.match(/k=([A-Za-z0-9_-]{8,})/) || v.match(/^([A-Za-z0-9_-]{8,})$/);
+  if (!m){ toast('That code doesn\'t look right'); return; }
+  localStorage.setItem('dw-key', m[1]);
+  location.hash = 'k='+m[1];
+  location.reload();
+});
+
+document.addEventListener('visibilitychange', function(){
+  if (!document.hidden) rolloverIfNeeded();
+});
+
+/* ---------- boot ---------- */
+function boot(){
+  if ('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+  var ready;
+  if (window.FIREBASE_CONFIG){
+    var key = houseKey();
+    if (!key){
+      document.getElementById('key-overlay').classList.add('show');
+      return; // wait for key entry (page reloads after save)
+    }
+    /* offline / flaky signal: never hang on a blank screen waiting for the
+       first database snapshot — after 4s show the last mirrored state.
+       Writes still go through the SDK, which queues and syncs on reconnect. */
+    ready = new Promise(function(resolve){
+      var settled = false;
+      var settle = function(){ if (!settled){ settled = true; resolve(); } };
+      initCloud(key).then(settle).catch(function(){
+        toast('Sync unavailable, using this phone only');
+        initLocal().then(settle);
+      });
+      setTimeout(function(){
+        if (settled) return;
+        if (!state){
+          try { state = JSON.parse(localStorage.getItem('dw-state')||'null'); } catch(e){}
+          if (!state) state = seedState();
+        }
+        var b = document.getElementById('modebanner');
+        b.textContent = 'Offline — showing the last saved plan. It reconnects by itself.';
+        b.classList.add('show');
+        settle();
+      }, 4000);
+    });
+  } else {
+    ready = initLocal();
+  }
+  ready.then(function(){
+    rolloverIfNeeded();
+    render();
+    if (!user) document.getElementById('who-overlay').classList.add('show');
+  });
+}
+boot();
+})();
+</script>
+</body>
+</html>
