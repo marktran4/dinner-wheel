@@ -115,7 +115,7 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
 .addextra{background:var(--saffron); color:var(--ink); font-weight:900; border-radius:10px; padding:0 14px}
 .shopempty{color:var(--muted); font-weight:700; font-size:14px}
 .rmitem{color:var(--muted); font-weight:800; font-size:15px; padding:2px 8px}
-.clearlistbtn{display:block; width:100%; margin-top:12px; background:#FCE9D8; color:var(--tomato); font-weight:800; font-size:13px; border-radius:10px; padding:10px}
+.clearlisttop{background:#FCE9D8; color:var(--tomato); font-weight:800; font-size:12px; border-radius:8px; padding:6px 10px; white-space:nowrap}
 
 /* wheel */
 #wheelwrap{display:flex; flex-direction:column; align-items:center; padding-top:6px}
@@ -245,7 +245,10 @@ body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[dat
     </div>
     <div id="slots"></div>
 
-    <h2>Shopping list <small id="shopcount"></small></h2>
+    <div class="weekhead">
+      <h2>Shopping list <small id="shopcount"></small></h2>
+      <button class="clearlisttop" id="clearlistbtn" data-act="clearlist" style="display:none">Clear list</button>
+    </div>
     <div class="shopcard" id="shopcard"></div>
   </section>
 
@@ -324,6 +327,7 @@ body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[dat
 var PTS = { ADD:2, COOK:3, WEEK:5 };
 var EFFORTS = ['quick','standard','involved'];
 var EFFORT_ICON = { quick:'🟢', standard:'🟡', involved:'🔴' };
+var EFFORT_MIGRATE = { normal:'standard', fancy:'involved' };  // old labels -> renamed tiers
 var WEDGE = ['#E14B32','#F0A62B','#2E7D46','#3E6FB0','#8A4E85','#B85C38'];
 var TITLES = [[80,'MasterChef'],[40,'Head Chef'],[15,'Sous Chef'],[0,'Kitchen Rookie']];
 var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -540,7 +544,7 @@ function award(who, pts, why){
   if (!who || who==='wheel') return;
   var cur = scores()[who] || 0;
   Store.patch({ ['scores/'+who]: cur + pts });
-  toast('+'+pts+' '+NAMES[who]+' · '+why);
+  toast((pts>=0?'+':'')+pts+' '+NAMES[who]+' · '+why);
 }
 function agoLabel(ts){
   if (!ts) return 'never cooked';
@@ -577,9 +581,26 @@ function confetti(big){
   }
 }
 
+/* ---------- migrations ---------- */
+function migrateEfforts(){
+  if (!state || !state.ideas) return;
+  var patch = {}, changed = false;
+  Object.keys(state.ideas).forEach(function(id){
+    var idea = state.ideas[id];
+    var mapped = idea && EFFORT_MIGRATE[idea.effort];
+    if (mapped){
+      idea.effort = mapped;   // old runs (this render) see the fix immediately
+      patch['ideas/'+id+'/effort'] = mapped;
+      changed = true;
+    }
+  });
+  if (changed) Store.patch(patch);
+}
+
 /* ---------- render ---------- */
 function render(){
   if (!state) return;
+  migrateEfforts();
   renderHeader(); renderWeek(); renderWheel(); renderIdeas();
 }
 
@@ -631,7 +652,7 @@ function renderWeek(){
         + '</div>'
         + '<div class="actions">'
         +   (s.cooked
-              ? '<button class="cookbtn done">Cooked 🎉</button>'
+              ? '<button class="cookbtn done" data-act="uncook" data-i="'+i+'">Cooked 🎉 (tap to undo)</button>'
               : '<button class="cookbtn" data-act="cook" data-i="'+i+'">Cooked it ✓</button>')
         +   '<button class="rmbtn" data-act="remove" data-i="'+i+'">swap out</button>'
         + '</div></div>';
@@ -677,8 +698,9 @@ function renderWeek(){
   var hasAny = items.length || exKeys.length;
   if (!shopHtml) shopHtml = '<div class="shopempty">Add items below and your shopping list builds itself.</div>';
   shopHtml += '<div class="extrarow"><input type="text" id="extrainput" placeholder="Add extra item (milk, bread...)" maxlength="40"><button class="addextra" data-act="addextra">Add</button></div>';
-  if (hasAny) shopHtml += '<button class="clearlistbtn" data-act="clearlist">Clear whole list</button>';
   document.getElementById('shopcard').innerHTML = shopHtml;
+  var clearBtn = document.getElementById('clearlistbtn');
+  if (clearBtn) clearBtn.style.display = hasAny ? '' : 'none';
   var exEl2 = document.getElementById('extrainput');
   if (exEl2 && exVal) exEl2.value = exVal;
   if (exEl2 && exFocus) exEl2.focus();
@@ -955,6 +977,19 @@ document.getElementById('view-week').addEventListener('click', function(ev){
     Store.patch(patch);
     confetti(false);
     award(user, PTS.COOK, 'dinner cooked');
+  }
+  else if (act === 'uncook'){
+    var s3 = slot(i); if (!s3 || !s3.ideaId || !s3.cooked) return;
+    var idea3 = ideas()[s3.ideaId];
+    var patch3 = {};
+    patch3['week/slots/'+i+'/cooked'] = null;
+    if (idea3){
+      var newCount = Math.max(0, (idea3.cooked||0) - 1);
+      patch3['ideas/'+s3.ideaId+'/cooked'] = newCount;
+      if (!newCount) patch3['ideas/'+s3.ideaId+'/last'] = 0;
+    }
+    Store.patch(patch3);
+    award(user, -PTS.COOK, 'un-cooked');
   }
   else if (act === 'remove'){
     Store.patch({ ['week/slots/'+i]: null });
