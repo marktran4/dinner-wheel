@@ -198,8 +198,14 @@ body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[dat
 }
 .overlay.show{display:flex}
 .sheet{
+  position:relative;
   background:var(--card); border-radius:22px 22px 0 0; width:100%; max-width:520px;
   padding:24px 22px calc(28px + env(safe-area-inset-bottom)); text-align:center;
+}
+.sheetclose{
+  position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%;
+  background:#F0E7D6; color:var(--muted); font-size:18px; font-weight:900; line-height:1;
+  display:flex; align-items:center; justify-content:center;
 }
 .sheet h3{margin:0 0 6px; font-size:20px; font-weight:900}
 .sheet p{margin:4px 0 14px; color:var(--muted); font-weight:700; font-size:14px}
@@ -307,11 +313,12 @@ body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[dat
 
 <div class="overlay" id="result-overlay">
   <div class="sheet">
+    <button class="sheetclose" id="res-close" aria-label="Close">✕</button>
     <div class="bigemoji" id="res-emoji"></div>
     <h3 id="res-title"></h3>
     <p id="res-sub"></p>
     <div class="sheetbtns">
-      <button class="primary" id="res-ok">Love it</button>
+      <button class="primary" id="res-ok">Keep it</button>
       <button class="danger" id="res-veto"></button>
     </div>
   </div>
@@ -1033,11 +1040,13 @@ document.getElementById('wheelfilters').addEventListener('click', function(ev){
 });
 document.getElementById('spinbtn').addEventListener('click', spin);
 
-document.getElementById('res-ok').addEventListener('click', function(){
+function keepResult(){
   document.getElementById('result-overlay').classList.remove('show');
   pendingResult = null;
   renderWheel();
-});
+}
+document.getElementById('res-ok').addEventListener('click', keepResult);
+document.getElementById('res-close').addEventListener('click', keepResult);
 document.getElementById('res-veto').addEventListener('click', function(){
   if (!pendingResult || !user || vetoUsed(user)) return;
   var pr = pendingResult; pendingResult = null;
