@@ -955,9 +955,10 @@ document.getElementById('slotseg').addEventListener('click', function(ev){
   var b = ev.target.closest('button[data-n]');
   if (!b) return;
   var n = +b.dataset.n;
-  var patch = { 'week/slotCount': n };
-  for (var i=n;i<8;i++){ if (slot(i)) patch['week/slots/'+i] = null; }  // no zombie slots on regrow
-  Store.patch(patch);
+  // Shrinking just hides the extra slots (everything reads up to slotCount, so
+  // they're inert while hidden). Keep their meals so they come back if you grow
+  // the count again — no accidental data loss from a mis-tap.
+  Store.patch({ 'week/slotCount': n });
 });
 
 document.getElementById('view-week').addEventListener('click', function(ev){
