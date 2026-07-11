@@ -48,24 +48,15 @@ header{
 }
 #modebanner.show{display:block}
 
-/* scoreboard */
-.scoreboard{display:flex; gap:10px; padding:12px 18px 4px}
-.player{
-  flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px;
-  padding:10px 12px; box-shadow:var(--shadow);
+/* monthly tally */
+.scoreboard{display:flex; padding:12px 18px 4px}
+.tally{
+  flex:1; display:flex; align-items:baseline; gap:10px;
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:12px 16px; box-shadow:var(--shadow);
 }
-.player .pname{font-weight:900; font-size:14px}
-.player .ptitle{font-size:11px; font-weight:700; color:var(--muted)}
-.player .ppts{font-size:20px; font-weight:900; font-variant-numeric:tabular-nums}
-.player.mark .pname{color:var(--denim)}
-.player.jenny .pname{color:var(--plum)}
-.player.me{outline:2px solid currentColor; outline-offset:-1px}
-.streak{
-  align-self:center; text-align:center; min-width:64px; background:var(--card);
-  border:1px solid var(--line); border-radius:14px; padding:8px 6px; box-shadow:var(--shadow);
-}
-.streak b{display:block; font-size:18px}
-.streak span{font-size:10px; font-weight:700; color:var(--muted)}
+.tally b{font-size:26px; font-weight:900; font-variant-numeric:tabular-nums; color:var(--denim)}
+.tally span{font-size:12px; font-weight:700; color:var(--muted)}
 
 main{max-width:520px; margin:0 auto}
 .view{display:none; padding:8px 18px 24px}
@@ -331,12 +322,10 @@ body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[dat
 'use strict';
 
 /* ---------- constants ---------- */
-var PTS = { ADD:2, COOK:3, WEEK:5 };
 var EFFORTS = ['quick','standard','involved'];
 var EFFORT_ICON = { quick:'🟢', standard:'🟡', involved:'🔴' };
 var EFFORT_MIGRATE = { normal:'standard', fancy:'involved' };  // old labels -> renamed tiers
 var WEDGE = ['#E14B32','#F0A62B','#2E7D46','#3E6FB0','#8A4E85','#B85C38'];
-var TITLES = [[80,'MasterChef'],[40,'Head Chef'],[15,'Sous Chef'],[0,'Kitchen Rookie']];
 var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 var RECENT_MS = 14*24*60*60*1000;
 var NAMES = { mark:'Mark', jenny:'Jenny', wheel:'the wheel' };
@@ -380,6 +369,15 @@ function weekLabel(key){
   var d = new Date(+p[0], +p[1]-1, +p[2]);
   return 'Week of ' + d.getDate() + ' ' + d.toLocaleDateString('en-AU',{month:'short'});
 }
+function monthKey(d){
+  var x = d ? new Date(d) : new Date();
+  return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0');
+}
+function monthLabel(){ return (new Date()).toLocaleDateString('en-AU',{month:'long'}); }
+function cookCount(){
+  var c = state && state.cooks;
+  return (c && c.key === monthKey()) ? (c.count||0) : 0;
+}
 
 function freshWeek(slotCount){
   return { key: weekKey(), slotCount: slotCount||3 };
@@ -389,7 +387,7 @@ function seedState(){
   SEED_IDEAS.forEach(function(s,i){
     ideas['seed'+i] = { name:s[0], emoji:s[1], effort:s[2], ings:'', by:'wheel', at:Date.now(), cooked:0, last:0 };
   });
-  return { ideas:ideas, week:freshWeek(3), scores:{mark:0,jenny:0}, streak:{count:0,lastKey:''} };
+  return { ideas:ideas, week:freshWeek(3), cooks:{key:monthKey(), count:0} };
 }
 
 /* safe getters (Firebase drops empty nodes) */
@@ -397,7 +395,6 @@ function ideas(){ return (state && state.ideas) || {}; }
 function week(){ return (state && state.week) || freshWeek(3); }
 function slots(){ return week().slots || {}; }
 function slot(i){ return slots()[String(i)] || null; }
-function scores(){ return (state && state.scores) || {mark:0,jenny:0}; }
 function shop(){ return week().shop || {}; }
 function extras(){ return week().extras || {}; }
 function vetoUsed(who){ return !!(week().veto && week().veto[who]); }
@@ -517,19 +514,8 @@ function rolloverIfNeeded(){
   var w = week(), nowKey = weekKey();
   if (w.key === nowKey) return;
   rolling = true;
-  var full = true;
-  for (var i=0;i<w.slotCount;i++){ var s=slot(i); if (!s || !s.ideaId) { full=false; break; } }
-  var st = (state.streak && typeof state.streak.count==='number') ? state.streak : {count:0,lastKey:''};
-  /* streak only continues if the full week was the one immediately before this one */
-  var np = nowKey.split('-');
-  var prevMon = weekKey(new Date(+np[0], +np[1]-1, +np[2]-7));
-  var newCount = full ? ((w.key === prevMon ? st.count : 0) + 1) : 0;
-  Store.patch({
-    'week': freshWeek(w.slotCount),
-    'streak': { count:newCount, lastKey:w.key }
-  });
+  Store.patch({ 'week': freshWeek(w.slotCount) });
   rolling = false;
-  if (full) toast('Last week fully planned. Streak: '+newCount+' 🔥');
 }
 
 /* ---------- helpers ---------- */
@@ -542,16 +528,6 @@ function pickEmoji(name){
   var n = name.toLowerCase();
   for (var i=0;i<EMOJI_MAP.length;i++){ if (n.indexOf(EMOJI_MAP[i][0]) !== -1) return EMOJI_MAP[i][1]; }
   return '🍽️';
-}
-function titleFor(pts){
-  for (var i=0;i<TITLES.length;i++){ if (pts >= TITLES[i][0]) return TITLES[i][1]; }
-  return TITLES[TITLES.length-1][1];
-}
-function award(who, pts, why){
-  if (!who || who==='wheel') return;
-  var cur = scores()[who] || 0;
-  Store.patch({ ['scores/'+who]: cur + pts });
-  toast((pts>=0?'+':'')+pts+' '+NAMES[who]+' · '+why);
 }
 function agoLabel(ts){
   if (!ts) return 'never cooked';
@@ -613,18 +589,12 @@ function render(){
 
 function renderHeader(){
   document.getElementById('weeklabel').textContent = weekLabel(week().key);
-  var sc = scores();
-  var st = (state.streak && state.streak.count) || 0;
-  var html = '';
-  ['mark','jenny'].forEach(function(p){
-    var pts = sc[p]||0;
-    html += '<div class="player '+p+(user===p?' me':'')+'">'
-      + '<div class="pname">'+NAMES[p]+'</div>'
-      + '<div class="ppts">'+pts+'</div>'
-      + '<div class="ptitle">'+titleFor(pts)+'</div></div>';
-  });
-  html += '<div class="streak"><b>'+st+'🔥</b><span>week streak</span></div>';
-  document.getElementById('scoreboard').innerHTML = html;
+  var n = cookCount();
+  document.getElementById('scoreboard').innerHTML =
+    '<div class="tally">'
+    + '<b>'+n+'</b>'
+    + '<span>'+(n===1?'meal':'meals')+' cooked in '+monthLabel()+'</span>'
+    + '</div>';
 }
 
 function renderWeek(){
@@ -848,7 +818,7 @@ function lockIn(ideaId, slotIdx, fromSpin){
     pendingResult = { ideaId: ideaId, slotIdx: slotIdx };
     document.getElementById('res-emoji').textContent = idea ? idea.emoji : '🍽️';
     document.getElementById('res-title').textContent = idea ? idea.name : '';
-    document.getElementById('res-sub').textContent = 'Locked into Meal '+(slotIdx+1)+'.'+(bonus?' That\'s the week planned! +'+PTS.WEEK+' pts.':(wasLast?' That\'s the week planned!':''));
+    document.getElementById('res-sub').textContent = 'Locked into Meal '+(slotIdx+1)+'.'+(wasLast?' That\'s the week planned!':'');
     var veto = document.getElementById('res-veto');
     if (user && !vetoUsed(user)){
       veto.style.display = '';
@@ -864,8 +834,8 @@ function lockIn(ideaId, slotIdx, fromSpin){
   Store.patch(patch);
   wheelState.excludeId = null;
   confetti(wasLast);
-  if (bonus) award(user, PTS.WEEK, 'week fully planned!');
-  if (!fromSpin) toast((idea?idea.name:'Meal')+' → Meal '+(slotIdx+1));
+  if (bonus) toast('That\'s the week planned! 🎉');
+  else if (!fromSpin) toast((idea?idea.name:'Meal')+' → Meal '+(slotIdx+1));
   render();
 }
 
@@ -916,7 +886,7 @@ function renderIdeas(){
       +   '<button class="savebtn" data-act="save">Save</button></div>'
       + '</div></div>';
   });
-  document.getElementById('ideas').innerHTML = html || '<div class="empty-ideas">No ideas yet. Add the first one and grab '+PTS.ADD+' points.</div>';
+  document.getElementById('ideas').innerHTML = html || '<div class="empty-ideas">No ideas yet. Add the first one below.</div>';
 
   Object.keys(openEdits).forEach(function(id){
     var c = document.querySelector('#ideas .idea[data-id="'+id+'"]');
@@ -942,7 +912,7 @@ function addIdea(){
     by:user||'wheel', at:Date.now(), cooked:0, last:0
   }});
   nameEl.value='';
-  award(user, PTS.ADD, 'new idea');
+  toast('Added '+name);
 }
 
 /* ---------- events ---------- */
@@ -982,9 +952,12 @@ document.getElementById('view-week').addEventListener('click', function(ev){
       patch['ideas/'+s2.ideaId+'/cooked'] = (idea.cooked||0)+1;
       patch['ideas/'+s2.ideaId+'/last'] = Date.now();
     }
+    var mk = monthKey(), c = state.cooks;
+    var newN = ((c && c.key===mk ? c.count : 0)||0) + 1;
+    patch['cooks'] = { key:mk, count:newN };
     Store.patch(patch);
     confetti(false);
-    award(user, PTS.COOK, 'dinner cooked');
+    toast('Cooked! '+newN+' this month 🎉');
   }
   else if (act === 'uncook'){
     var s3 = slot(i); if (!s3 || !s3.ideaId || !s3.cooked) return;
@@ -996,8 +969,9 @@ document.getElementById('view-week').addEventListener('click', function(ev){
       patch3['ideas/'+s3.ideaId+'/cooked'] = newCount;
       if (!newCount) patch3['ideas/'+s3.ideaId+'/last'] = 0;
     }
+    var mk3 = monthKey(), c3 = state.cooks;
+    if (c3 && c3.key===mk3 && c3.count>0) patch3['cooks'] = { key:mk3, count:c3.count-1 };
     Store.patch(patch3);
-    award(user, -PTS.COOK, 'un-cooked');
   }
   else if (act === 'remove'){
     Store.patch({ ['week/slots/'+i]: null });
