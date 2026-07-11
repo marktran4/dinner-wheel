@@ -3,8 +3,8 @@
 A tiny web app for Mark + Jenny: dump meal ideas into a shared bank, pick how many
 dinners to plan this week (2, 3 or 4), then spin the wheel to decide. The spin
 **locks in** the meal — each person gets one veto per week, that's the game.
-Points for adding ideas and cooking, a streak for planning every week, and a
-combined shopping list so the week is visible before the shop.
+A running tally of meals cooked this month and a combined shopping list so the
+week is visible before the shop.
 
 **Live app:** https://marktran4.github.io/dinner-wheel/
 
@@ -16,15 +16,16 @@ combined shopping list so the week is visible before the shop.
 
 ## How to play
 
-- **Ideas tab** — add meal ideas (+2 pts). Optionally list ingredients so the
+- **Ideas tab** — add meal ideas. Optionally list ingredients so the
   shop list builds itself. Tap an idea to edit or delete it.
 - **This week tab** — pick 2/3/4 dinner slots. Fill a slot by spinning or picking.
-  Tap the day chip to assign a day. Hit **Cooked it** when it's done (+3 pts).
+  Tap the day chip to assign a day. Hit **Cooked it** when it's done — that bumps
+  the monthly tally at the top.
 - **Wheel tab** — spin to fill the next empty slot. The result locks in unless
   you spend your one weekly veto. Meals cooked in the last 2 weeks sit out
   unless you turn on "include recent".
-- Filling the last slot scores a +5 week bonus. Weeks roll over automatically
-  every Monday; a fully planned week extends the streak.
+- The tally at the top counts every meal cooked this month and resets on the 1st.
+  Weeks roll over automatically every Monday.
 
 ## Turning on shared sync (one-time, ~10 minutes)
 
@@ -67,8 +68,8 @@ Notes:
   the link/on the phones).
 - If phones were used in single-phone mode first: the first phone to connect
   seeds the shared database with everything it has; phones joining later keep
-  the shared data plus their own meal ideas (idea banks are merged). Points
-  reset to the shared scoreboard when a later phone joins.
+  the shared data plus their own meal ideas (idea banks are merged). The monthly
+  tally follows the shared data when a later phone joins.
 
 ## Dev notes
 
