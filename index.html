@@ -92,6 +92,11 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
 .spinlink{background:var(--tomato); color:#fff; font-weight:800; font-size:13px; border-radius:10px; padding:8px 14px}
 .picklink{color:var(--tomato); font-weight:800; font-size:13px}
 .slotlabel{font-size:11px; font-weight:800; color:var(--muted); letter-spacing:.4px}
+.newweekbtn{
+  width:100%; margin:4px 0 2px; background:transparent; border:1px dashed var(--line);
+  color:var(--muted); font-weight:800; font-size:13px; border-radius:12px; padding:11px;
+}
+.newweekbtn:active{background:#F4E8C2}
 
 /* shop list */
 .shopcard{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:var(--shadow)}
@@ -241,6 +246,7 @@ body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[dat
       <div class="seg" id="slotseg"></div>
     </div>
     <div id="slots"></div>
+    <button class="newweekbtn" data-act="newweek">🧹 Start next week</button>
 
     <div class="weekhead">
       <h2>Shopping list <small id="shopcount"></small></h2>
@@ -351,7 +357,7 @@ var SEED_IDEAS = [
 /* ---------- state ---------- */
 var state = null;
 var user = localStorage.getItem('dw-user') || '';
-var wheelState = { spinning:false, candidates:[], angle:0, effort:'', includeRecent:false, excludeId:null };
+var wheelState = { spinning:false, candidates:[], angle:0, efforts:[], includeRecent:false, excludeId:null };
 var pendingResult = null;   // {ideaId, slotIdx}
 var rolling = false;
 
@@ -379,8 +385,16 @@ function cookCount(){
   return (c && c.key === monthKey()) ? (c.count||0) : 0;
 }
 
+function freshWeekAt(key, slotCount){
+  return { key: key, slotCount: slotCount||3 };
+}
 function freshWeek(slotCount){
-  return { key: weekKey(), slotCount: slotCount||3 };
+  return freshWeekAt(weekKey(), slotCount);
+}
+function nextWeekKey(){
+  var d = new Date();
+  d.setDate(d.getDate()+7);   // any day next calendar week -> its Monday
+  return weekKey(d);
 }
 function seedState(){
   var ideas = {};
@@ -512,7 +526,9 @@ function initLocal(){
 function rolloverIfNeeded(){
   if (!state || rolling) return;
   var w = week(), nowKey = weekKey();
-  if (w.key === nowKey) return;
+  // Only roll a *past* week forward. A week keyed to this week or a future
+  // Monday (set by "Start next week") is a deliberate plan-ahead — never wipe it.
+  if (w.key >= nowKey) return;
   rolling = true;
   Store.patch({ 'week': freshWeek(w.slotCount) });
   rolling = false;
@@ -692,7 +708,7 @@ function wheelCandidates(){
   var pool = all.filter(function(e){
     if (planned[e.id]) return false;
     if (wheelState.excludeId === e.id) return false;   // just-vetoed meal sits the respin out
-    if (wheelState.effort && (e.idea.effort||'standard') !== wheelState.effort) return false;
+    if (wheelState.efforts.length && wheelState.efforts.indexOf(e.idea.effort||'standard') === -1) return false;
     if (!wheelState.includeRecent && e.idea.last && (Date.now()-e.idea.last) < RECENT_MS) return false;
     return true;
   });
@@ -707,9 +723,10 @@ function wheelCandidates(){
 
 function renderWheel(){
   /* filters */
-  var f = '<button class="chip '+(wheelState.effort===''?'on':'')+'" data-eff="">all</button>';
+  var effs = wheelState.efforts;
+  var f = '<button class="chip '+(effs.length===0?'on':'')+'" data-eff="">all</button>';
   EFFORTS.forEach(function(e){
-    f += '<button class="chip '+(wheelState.effort===e?'on':'')+'" data-eff="'+e+'">'+EFFORT_ICON[e]+' '+e+'</button>';
+    f += '<button class="chip '+(effs.indexOf(e)!==-1?'on':'')+'" data-eff="'+e+'">'+EFFORT_ICON[e]+' '+e+'</button>';
   });
   f += '<button class="chip '+(wheelState.includeRecent?'on':'')+'" data-act="recent">include recent</button>';
   document.getElementById('wheelfilters').innerHTML = f;
@@ -935,7 +952,12 @@ document.getElementById('view-week').addEventListener('click', function(ev){
   var b = ev.target.closest('[data-act]');
   if (!b) return;
   var act = b.dataset.act, i = +b.dataset.i;
-  if (act === 'gospin'){ document.body.dataset.tab = 'wheel'; }
+  if (act === 'newweek'){
+    if (!confirm('Start next week? This clears the current dinners, cooked ticks and shopping list so you can plan the week ahead. Your idea bank and monthly tally stay.')) return;
+    Store.patch({ 'week': freshWeekAt(nextWeekKey(), week().slotCount) });
+    toast('Fresh week — plan away 🗓️');
+  }
+  else if (act === 'gospin'){ document.body.dataset.tab = 'wheel'; }
   else if (act === 'gopick'){ document.body.dataset.tab = 'ideas'; }
   else if (act === 'day'){
     var s = slot(i); if (!s) return;
@@ -1010,7 +1032,15 @@ document.getElementById('wheelfilters').addEventListener('click', function(ev){
   var b = ev.target.closest('button');
   if (!b || wheelState.spinning) return;
   if (b.dataset.act === 'recent') wheelState.includeRecent = !wheelState.includeRecent;
-  else if (b.dataset.eff !== undefined) wheelState.effort = b.dataset.eff;
+  else if (b.dataset.eff !== undefined){
+    var e = b.dataset.eff;
+    if (e === ''){ wheelState.efforts = []; }   // "all" clears the tier filter
+    else {
+      var idx = wheelState.efforts.indexOf(e);
+      if (idx === -1) wheelState.efforts.push(e);   // toggle this tier on
+      else wheelState.efforts.splice(idx, 1);       // ...or off
+    }
+  }
   renderWheel();
 });
 document.getElementById('spinbtn').addEventListener('click', spin);
