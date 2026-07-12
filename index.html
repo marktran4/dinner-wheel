@@ -172,6 +172,20 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
 .byline.mark{color:var(--denim)} .byline.jenny{color:var(--plum)}
 .empty-ideas{color:var(--muted); font-weight:700; text-align:center; padding:26px 10px}
 .ideasearch{width:100%; border:1px solid var(--line); border-radius:12px; padding:11px 14px; background:#fff; margin-bottom:6px}
+.ideaacts{display:flex; flex-direction:column; gap:6px; align-items:flex-end}
+.idea .selbtn{background:#F4E8C2; color:var(--ink); font-weight:800; font-size:12px; border-radius:9px; padding:7px 11px; white-space:nowrap}
+.idea .selbtn.on{background:var(--basil); color:#fff}
+.idea .selbtn:disabled{opacity:.4}
+.idea.picked{border-color:var(--basil); box-shadow:0 0 0 1px var(--basil), var(--shadow)}
+.shortlistbar{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  background:#E9F3EC; border:1px solid #BEE0C8; border-radius:12px; padding:9px 12px; margin-bottom:10px;
+}
+.shortlistbar .slcount{font-weight:800; font-size:13px; color:var(--basil)}
+.shortlistbar .slacts{display:flex; gap:8px; align-items:center}
+.shortlistbar .slspin{background:var(--basil); color:#fff; font-weight:800; font-size:13px; border-radius:9px; padding:7px 12px}
+.shortlistbar .slclear{color:var(--muted); font-weight:800; font-size:12px}
+.filters .shortnote{font-weight:800; font-size:13px; color:var(--basil); align-self:center}
 
 /* tabbar */
 nav{
@@ -280,6 +294,7 @@ body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[dat
     </div>
     <h2>The idea bank <small id="bankcount"></small></h2>
     <input type="text" id="ideasearch" class="ideasearch" placeholder="🔎 Search ideas" maxlength="40" autocomplete="off">
+    <div id="shortlistbar" class="shortlistbar" style="display:none"></div>
     <div id="ideas"></div>
   </section>
 </main>
@@ -337,6 +352,7 @@ var WEDGE = ['#E14B32','#F0A62B','#2E7D46','#3E6FB0','#8A4E85','#B85C38'];
 var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 var RECENT_MS = 14*24*60*60*1000;
 var NAMES = { mark:'Mark', jenny:'Jenny', wheel:'the wheel' };
+var SHORTLIST_MAX = 5;
 
 var EMOJI_MAP = [
   ['taco','🌮'],['burrito','🌯'],['pasta','🍝'],['spag','🍝'],['bolog','🍝'],['lasag','🍝'],
@@ -414,6 +430,12 @@ function slot(i){ return slots()[String(i)] || null; }
 function shop(){ return week().shop || {}; }
 function extras(){ return week().extras || {}; }
 function vetoUsed(who){ return !!(week().veto && week().veto[who]); }
+function shortlist(){ return week().shortlist || {}; }
+function shortlistIds(){
+  var sl = shortlist(), out = [];
+  Object.keys(sl).forEach(function(id){ if (sl[id] && ideas()[id]) out.push(id); });  // drop deleted ideas
+  return out;
+}
 function plannedIds(){
   var w = week(), out = {};
   for (var i=0;i<w.slotCount;i++){ var s=slot(i); if (s && s.ideaId) out[s.ideaId]=true; }
@@ -707,6 +729,17 @@ function renderWeek(){
 /* ---------- wheel ---------- */
 function wheelCandidates(){
   var planned = plannedIds();
+  /* if the user has hand-picked a shortlist, the wheel spins ONLY those
+     (minus any already planned or just-vetoed) and ignores the tier/recent
+     filters — they chose these deliberately. */
+  var sl = shortlistIds();
+  if (sl.length){
+    var poolS = sl.filter(function(id){
+      return !planned[id] && wheelState.excludeId !== id;
+    }).map(function(id){ return { id:id, idea:ideas()[id] }; });
+    poolS.totalPool = poolS.length;
+    return poolS;
+  }
   var all = Object.keys(ideas()).map(function(id){ var o = ideas()[id]; return { id:id, idea:o }; });
   var pool = all.filter(function(e){
     if (planned[e.id]) return false;
@@ -726,12 +759,20 @@ function wheelCandidates(){
 
 function renderWheel(){
   /* filters */
-  var effs = wheelState.efforts;
-  var f = '<button class="chip '+(effs.length===0?'on':'')+'" data-eff="">all</button>';
-  EFFORTS.forEach(function(e){
-    f += '<button class="chip '+(effs.indexOf(e)!==-1?'on':'')+'" data-eff="'+e+'">'+EFFORT_ICON[e]+' '+e+'</button>';
-  });
-  f += '<button class="chip '+(wheelState.includeRecent?'on':'')+'" data-act="recent">include recent</button>';
+  var slN = shortlistIds().length;
+  var f;
+  if (slN){
+    /* shortlist active: tier/recent filters don't apply, offer a way out */
+    f = '<div class="shortnote">🎯 Spinning your shortlist · '+slN+' meal'+(slN>1?'s':'')+'</div>'
+      + '<button class="chip" data-act="clearshort">use full bank</button>';
+  } else {
+    var effs = wheelState.efforts;
+    f = '<button class="chip '+(effs.length===0?'on':'')+'" data-eff="">all</button>';
+    EFFORTS.forEach(function(e){
+      f += '<button class="chip '+(effs.indexOf(e)!==-1?'on':'')+'" data-eff="'+e+'">'+EFFORT_ICON[e]+' '+e+'</button>';
+    });
+    f += '<button class="chip '+(wheelState.includeRecent?'on':'')+'" data-act="recent">include recent</button>';
+  }
   document.getElementById('wheelfilters').innerHTML = f;
 
   // don't rebuild mid-spin, and keep the winning layout visible under the result sheet
@@ -890,6 +931,8 @@ function renderIdeas(){
     : (list.length ? list.length+' ideas' : '');
   var planned = plannedIds();
   var canPlan = nextEmpty() !== -1;
+  var sl = shortlist();
+  var slFull = shortlistIds().length >= SHORTLIST_MAX;
   var html = '';
   shown.forEach(function(e){
     var o = e.idea;
@@ -897,13 +940,19 @@ function renderIdeas(){
     var meta = '<span class="byline '+esc(by)+'">'+esc(NAMES[by]||by)+'</span> · '+EFFORT_ICON[o.effort||'standard']
       + ' · ' + (o.cooked ? 'cooked '+o.cooked+'× · '+agoLabel(o.last) : 'never cooked');
     var inWeek = planned[e.id];
-    html += '<div class="idea" data-id="'+e.id+'">'
+    var picked = !!sl[e.id];
+    html += '<div class="idea'+(picked?' picked':'')+'" data-id="'+e.id+'">'
       + '<div class="idearow">'
       +   '<div class="emoji">'+esc(o.emoji)+'</div>'
       +   '<div class="body" data-act="toggle"><div class="name">'+esc(o.name)+'</div><div class="meta">'+meta+'</div></div>'
-      +   (inWeek
-            ? '<button class="planbtn" disabled>on the menu</button>'
-            : '<button class="planbtn" data-act="plan" '+(canPlan?'':'disabled')+'>+ this week</button>')
+      +   '<div class="ideaacts">'
+      +     (inWeek
+              ? '<button class="selbtn" disabled>on the menu</button>'
+              : '<button class="selbtn'+(picked?' on':'')+'" data-act="sel"'+((!picked&&slFull)?' disabled':'')+'>'+(picked?'✓ on wheel':'🎡 add to wheel')+'</button>')
+      +     (inWeek
+              ? '<button class="planbtn" disabled>planned</button>'
+              : '<button class="planbtn" data-act="plan" '+(canPlan?'':'disabled')+'>+ this week</button>')
+      +   '</div>'
       + '</div>'
       + '<div class="ideaedit">'
       +   '<input type="text" class="e-name" value="'+esc(o.name)+'" maxlength="40">'
@@ -913,6 +962,19 @@ function renderIdeas(){
   });
   var emptyMsg = q ? 'No ideas match "'+esc(q)+'".' : 'No ideas yet. Add the first one below.';
   document.getElementById('ideas').innerHTML = html || '<div class="empty-ideas">'+emptyMsg+'</div>';
+
+  /* shortlist summary bar */
+  var slCount = shortlistIds().length;
+  var bar = document.getElementById('shortlistbar');
+  if (slCount){
+    bar.style.display = '';
+    bar.innerHTML = '<span class="slcount">🎡 '+slCount+' of '+SHORTLIST_MAX+' on the wheel</span>'
+      + '<span class="slacts"><button class="slspin" data-act="gowheel">Spin these →</button>'
+      + '<button class="slclear" data-act="clearshort">clear</button></span>';
+  } else {
+    bar.style.display = 'none';
+    bar.innerHTML = '';
+  }
 
   Object.keys(openEdits).forEach(function(id){
     var c = document.querySelector('#ideas .idea[data-id="'+id+'"]');
@@ -1040,6 +1102,7 @@ document.getElementById('view-week').addEventListener('change', function(ev){
 document.getElementById('wheelfilters').addEventListener('click', function(ev){
   var b = ev.target.closest('button');
   if (!b || wheelState.spinning) return;
+  if (b.dataset.act === 'clearshort'){ Store.patch({ 'week/shortlist': null }); return; }
   if (b.dataset.act === 'recent') wheelState.includeRecent = !wheelState.includeRecent;
   else if (b.dataset.eff !== undefined){
     var e = b.dataset.eff;
@@ -1085,6 +1148,12 @@ document.getElementById('neweffort').addEventListener('click', function(ev){
   renderIdeas();
 });
 document.getElementById('ideasearch').addEventListener('input', renderIdeas);
+document.getElementById('shortlistbar').addEventListener('click', function(ev){
+  var b = ev.target.closest('[data-act]');
+  if (!b) return;
+  if (b.dataset.act === 'gowheel'){ document.body.dataset.tab = 'wheel'; renderWheel(); }
+  else if (b.dataset.act === 'clearshort'){ Store.patch({ 'week/shortlist': null }); }
+});
 document.getElementById('addbtn').addEventListener('click', addIdea);
 document.getElementById('newname').addEventListener('keydown', function(ev){
   if (ev.key === 'Enter') addIdea();
@@ -1097,6 +1166,11 @@ document.getElementById('ideas').addEventListener('click', function(ev){
   if (!b) return;
   var act = b.dataset.act;
   if (act === 'toggle'){ card.classList.toggle('open'); }
+  else if (act === 'sel'){
+    var has = !!shortlist()[id];
+    if (!has && shortlistIds().length >= SHORTLIST_MAX){ toast('Pick up to '+SHORTLIST_MAX+' for the wheel'); return; }
+    Store.patch({ ['week/shortlist/'+id]: has ? null : true });
+  }
   else if (act === 'plan'){
     var idx = nextEmpty();
     if (idx === -1) return;
