@@ -419,7 +419,7 @@ function seedState(){
   SEED_IDEAS.forEach(function(s,i){
     ideas['seed'+i] = { name:s[0], emoji:s[1], effort:s[2], ings:'', by:'wheel', at:Date.now(), cooked:0, last:0 };
   });
-  return { ideas:ideas, week:freshWeek(3), cooks:{key:monthKey(), count:0} };
+  return { ideas:ideas, week:freshWeek(3), cooks:{key:monthKey(), count:0}, shop:{}, extras:{} };
 }
 
 /* safe getters (Firebase drops empty nodes) */
@@ -427,8 +427,8 @@ function ideas(){ return (state && state.ideas) || {}; }
 function week(){ return (state && state.week) || freshWeek(3); }
 function slots(){ return week().slots || {}; }
 function slot(i){ return slots()[String(i)] || null; }
-function shop(){ return week().shop || {}; }
-function extras(){ return week().extras || {}; }
+function shop(){ return (state && state.shop) || {}; }
+function extras(){ return (state && state.extras) || {}; }
 function vetoUsed(who){ return !!(week().veto && week().veto[who]); }
 function shortlist(){ return week().shortlist || {}; }
 function shortlistIds(){
@@ -1024,7 +1024,7 @@ document.getElementById('view-week').addEventListener('click', function(ev){
   if (!b) return;
   var act = b.dataset.act, i = +b.dataset.i;
   if (act === 'newweek'){
-    if (!confirm('Start next week? This clears the current dinners, cooked ticks and shopping list so you can plan the week ahead. Your idea bank and monthly tally stay.')) return;
+    if (!confirm('Start next week? This clears the current dinners and cooked ticks so you can plan the week ahead. Your idea bank, shopping list and monthly tally stay.')) return;
     Store.patch({ 'week': freshWeekAt(nextWeekKey(), week().slotCount) });
     toast('Fresh week — plan away 🗓️');
   }
@@ -1073,14 +1073,14 @@ document.getElementById('view-week').addEventListener('click', function(ev){
     var inp = document.getElementById('extrainput');
     var v = inp.value.trim(); if (!v) return;
     inp.value = '';
-    Store.patch({ ['week/extras/'+uid()]: { name:v, done:false } });
+    Store.patch({ ['extras/'+uid()]: { name:v, done:false } });
   }
   else if (act === 'rmextra'){
-    Store.patch({ ['week/extras/'+b.dataset.key]: null });
+    Store.patch({ ['extras/'+b.dataset.key]: null });
   }
   else if (act === 'clearlist'){
     if (!confirm('Clear the whole shopping list?')) return;
-    Store.patch({ 'week/extras': null, 'week/shop': null });
+    Store.patch({ 'extras': null, 'shop': null });
   }
 });
 document.getElementById('view-week').addEventListener('keydown', function(ev){
@@ -1093,9 +1093,9 @@ document.getElementById('view-week').addEventListener('change', function(ev){
   var b = ev.target.closest('[data-act]');
   if (!b) return;
   if (b.dataset.act === 'shopck'){
-    Store.patch({ ['week/shop/'+b.dataset.key]: b.checked ? true : null });
+    Store.patch({ ['shop/'+b.dataset.key]: b.checked ? true : null });
   } else if (b.dataset.act === 'extrack'){
-    Store.patch({ ['week/extras/'+b.dataset.key+'/done']: b.checked });
+    Store.patch({ ['extras/'+b.dataset.key+'/done']: b.checked });
   }
 });
 
