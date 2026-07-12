@@ -1024,8 +1024,11 @@ document.getElementById('view-week').addEventListener('click', function(ev){
   if (!b) return;
   var act = b.dataset.act, i = +b.dataset.i;
   if (act === 'newweek'){
-    if (!confirm('Start next week? This clears the current dinners and cooked ticks so you can plan the week ahead. Your idea bank, shopping list and monthly tally stay.')) return;
-    Store.patch({ 'week': freshWeekAt(nextWeekKey(), week().slotCount) });
+    if (!confirm('Start next week? This clears the current dinners and cooked ticks so you can plan the week ahead. Your idea bank, shortlist, shopping list and monthly tally stay.')) return;
+    var nw = freshWeekAt(nextWeekKey(), week().slotCount);
+    var sl = week().shortlist;
+    if (sl) nw.shortlist = sl;   // shortlist is next week's working set — carry it forward, don't wipe it
+    Store.patch({ 'week': nw });
     toast('Fresh week — plan away 🗓️');
   }
   else if (act === 'gospin'){ document.body.dataset.tab = 'wheel'; }
