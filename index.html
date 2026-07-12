@@ -171,6 +171,7 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
 .byline{font-weight:800}
 .byline.mark{color:var(--denim)} .byline.jenny{color:var(--plum)}
 .empty-ideas{color:var(--muted); font-weight:700; text-align:center; padding:26px 10px}
+.ideasearch{width:100%; border:1px solid var(--line); border-radius:12px; padding:11px 14px; background:#fff; margin-bottom:6px}
 
 /* tabbar */
 nav{
@@ -278,6 +279,7 @@ body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[dat
       </div>
     </div>
     <h2>The idea bank <small id="bankcount"></small></h2>
+    <input type="text" id="ideasearch" class="ideasearch" placeholder="🔎 Search ideas" maxlength="40" autocomplete="off">
     <div id="ideas"></div>
   </section>
 </main>
@@ -879,11 +881,16 @@ function renderIdeas(){
 
   var list = Object.keys(ideas()).map(function(id){ return { id:id, idea:ideas()[id] }; });
   list.sort(function(a,b){ return (b.idea.at||0)-(a.idea.at||0); });
-  document.getElementById('bankcount').textContent = list.length ? list.length+' ideas' : '';
+  var searchEl = document.getElementById('ideasearch');
+  var q = (searchEl && searchEl.value || '').trim().toLowerCase();
+  var shown = q ? list.filter(function(e){ return (e.idea.name||'').toLowerCase().indexOf(q) !== -1; }) : list;
+  document.getElementById('bankcount').textContent = q
+    ? (shown.length + ' of ' + list.length)
+    : (list.length ? list.length+' ideas' : '');
   var planned = plannedIds();
   var canPlan = nextEmpty() !== -1;
   var html = '';
-  list.forEach(function(e){
+  shown.forEach(function(e){
     var o = e.idea;
     var by = o.by||'wheel';
     var meta = '<span class="byline '+esc(by)+'">'+esc(NAMES[by]||by)+'</span> · '+EFFORT_ICON[o.effort||'standard']
@@ -903,7 +910,8 @@ function renderIdeas(){
       +   '<button class="savebtn" data-act="save">Save</button></div>'
       + '</div></div>';
   });
-  document.getElementById('ideas').innerHTML = html || '<div class="empty-ideas">No ideas yet. Add the first one below.</div>';
+  var emptyMsg = q ? 'No ideas match "'+esc(q)+'".' : 'No ideas yet. Add the first one below.';
+  document.getElementById('ideas').innerHTML = html || '<div class="empty-ideas">'+emptyMsg+'</div>';
 
   Object.keys(openEdits).forEach(function(id){
     var c = document.querySelector('#ideas .idea[data-id="'+id+'"]');
@@ -1075,6 +1083,7 @@ document.getElementById('neweffort').addEventListener('click', function(ev){
   newEffort = b.dataset.eff;
   renderIdeas();
 });
+document.getElementById('ideasearch').addEventListener('input', renderIdeas);
 document.getElementById('addbtn').addEventListener('click', addIdea);
 document.getElementById('newname').addEventListener('keydown', function(ev){
   if (ev.key === 'Enter') addIdea();
