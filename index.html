@@ -643,7 +643,8 @@ function renderWeek(){
         +   '<div class="slotlabel">MEAL '+(i+1)+'</div>'
         +   '<div class="name">'+esc(idea.name)+'</div>'
         +   '<div class="meta"><button class="daychip" data-act="day" data-i="'+i+'">'+esc(day)+'</button>'
-        +   '<span>'+EFFORT_ICON[idea.effort||'standard']+' '+esc(idea.effort||'standard')+'</span></div>'
+        +   '<span>'+EFFORT_ICON[idea.effort||'standard']+' '+esc(idea.effort||'standard')+'</span>'
+        +   '<span class="byline '+esc(idea.by||'wheel')+'">by '+esc(NAMES[idea.by]||idea.by||'the wheel')+'</span></div>'
         + '</div>'
         + '<div class="actions">'
         +   (s.cooked
