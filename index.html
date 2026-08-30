@@ -78,9 +78,6 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
   display:flex; gap:8px; align-items:center; flex-wrap:wrap;
 }
 .slot .metalink{margin-top:5px}
-/* the day chip used to separate these; without it the effort and the name ran
-   together as one phrase */
-.slot .meta > span + span::before{content:"·"; padding-right:8px; opacity:.5}
 /* on a narrow phone the emoji and the Cooked button squeeze the text column
    until the meta breaks over three lines — give it the room back */
 @media (max-width:359px){
@@ -88,9 +85,6 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
   .slot .emoji{font-size:25px; width:28px}
   .cookbtn{font-size:11.5px; padding:7px 9px}
   .slot .meta{gap:7px}
-  /* no room for the word on a 320px screen — the dot still says it, and it
-     keeps its tooltip */
-  .slot .effw{display:none}
 }
 .slot .actions{display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex:0 0 auto; max-width:116px}
 .cookbtn{background:var(--basil); color:#fff; font-weight:800; font-size:12px; border-radius:9px; padding:7px 10px}
@@ -305,7 +299,7 @@ body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{col
 <main>
   <section class="view" id="view-week">
     <div class="weekhead">
-      <h2>This week's dinners</h2>
+      <h2>This week's meal plan</h2>
     </div>
     <div id="slots"></div>
     <button class="newweekbtn" data-act="newweek" id="newweekbtn">Start next week</button>
@@ -843,8 +837,6 @@ function renderWeek(){
         +   '<div class="slotlabel">MEAL '+(i+1)+'</div>'
         +   '<div class="name">'+esc(idea.name)+'</div>'
         +   '<div class="meta">'
-        +   '<span title="'+esc(idea.effort||'standard')+'">'+EFFORT_ICON[idea.effort||'standard']
-        +     ' <span class="effw">'+esc(idea.effort||'standard')+'</span></span>'
         +   '<span class="byline '+esc(idea.by||'wheel')+'">'+esc(NAMES[idea.by]||idea.by||'Nomi')+'</span>'
         +   '</div>'
         +   (rchip ? '<div class="metalink">'+rchip+'</div>' : '')
@@ -1436,8 +1428,11 @@ document.getElementById('keysave').addEventListener('click', function(){
   location.reload();
 });
 
+var swReg = null;
 document.addEventListener('visibilitychange', function(){
-  if (!document.hidden) rolloverIfNeeded();
+  if (document.hidden) return;
+  rolloverIfNeeded();
+  if (swReg) swReg.update().catch(function(){});   // catch deploys on reopen
 });
 
 /* ---------- tuck the tab bar away while scrolling down ---------- */
@@ -1477,7 +1472,19 @@ document.addEventListener('visibilitychange', function(){
 function boot(){
   document.getElementById('newweekbtn').insertAdjacentHTML('afterbegin', icon('again'));
   if ('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      swReg = reg;
+      reg.update().catch(function(){});
+    }).catch(function(){});
+    /* A new worker taking over means the shell it serves is newer than the page
+       we're looking at. Reload once so the update is actually on screen, rather
+       than waiting for the next cold start. */
+    var refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if (refreshing) return;
+      refreshing = true;
+      location.reload();
+    });
   }
   var ready;
   if (window.FIREBASE_CONFIG){
