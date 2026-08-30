@@ -38,9 +38,12 @@ header{
   padding:calc(10px + env(safe-area-inset-top)) 18px 8px;
   border-bottom:1px solid var(--line);
 }
-.brand{display:flex; align-items:baseline; justify-content:space-between}
-.brand h1{margin:0; font-size:24px; font-weight:900; letter-spacing:-.3px}
+.brand{display:flex; align-items:center; justify-content:space-between}
+.brand h1{margin:0; font-size:24px; font-weight:900; letter-spacing:-.3px;
+  display:flex; align-items:center; gap:9px}
 .brand h1 .dot{color:var(--tomato)}
+/* the home-screen mark, small enough to sit on the wordmark's shoulder */
+.brandmark{width:30px; height:30px; border-radius:9px; flex:0 0 auto; display:block}
 #modebanner{
   display:none; margin-top:6px; font-size:12px; font-weight:700;
   background:#FCE9D8; color:var(--rust); border-radius:8px; padding:5px 9px;
@@ -277,7 +280,21 @@ body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{col
 
 <header>
   <div class="brand">
-    <h1>Nomi<span class="dot">.</span></h1>
+    <h1>
+      <!-- the home-screen icon, in miniature. Kept identical to tools/icon.svg
+           so the header and the app icon are the same mark. -->
+      <svg class="brandmark" viewBox="0 0 512 512" aria-hidden="true">
+        <rect width="512" height="512" fill="#E14B32"/>
+        <g fill="none" stroke="#FFF3CF" stroke-width="20" stroke-linecap="round">
+          <path d="M206 196c-26-26 18-45-7-72"/>
+          <path d="M306 196c-26-26 18-45-7-72"/>
+        </g>
+        <path d="M108 258h296c0 82-66 148-148 148s-148-66-148-148Z" fill="#FFF3CF"/>
+        <rect x="88" y="238" width="336" height="36" rx="18" fill="#FFF3CF"/>
+        <path d="M215 410h82" stroke="#FFF3CF" stroke-width="23" stroke-linecap="round"/>
+      </svg>
+      <span>Nomi<span class="dot">.</span></span>
+    </h1>
   </div>
   <div id="modebanner">Single-phone mode. Shared sync is off until Firebase is set up (see the README).</div>
 </header>
