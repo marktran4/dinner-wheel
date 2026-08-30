@@ -195,7 +195,14 @@ nav{
   border:1px solid var(--line); border-radius:99px;
   padding:5px;
   box-shadow:0 6px 22px rgba(59,43,27,.18);
+  transition:transform .26s ease, opacity .26s ease;
 }
+/* the centring translateX has to survive, so the slide is composed with it */
+nav.tucked{
+  transform:translateX(-50%) translateY(calc(100% + 22px));
+  opacity:0; pointer-events:none;
+}
+@media (prefers-reduced-motion: reduce){ nav{transition:opacity .15s ease} nav.tucked{transform:translateX(-50%)} }
 nav button{
   display:flex; flex-direction:column; align-items:center; gap:2px;
   font-size:10.5px; font-weight:800; color:var(--muted);
@@ -1379,6 +1386,39 @@ document.getElementById('keysave').addEventListener('click', function(){
 document.addEventListener('visibilitychange', function(){
   if (!document.hidden) rolloverIfNeeded();
 });
+
+/* ---------- tuck the tab bar away while scrolling down ---------- */
+(function(){
+  var navEl = document.querySelector('nav');
+  var lastY = window.scrollY || 0, queued = false;
+  var DEADZONE = 6;    // ignore the jitter of a finger resting on the screen
+  var TOP = 60;        // near the top it always shows, whichever way you moved
+
+  function update(){
+    var y = window.scrollY || document.documentElement.scrollTop || 0;
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    if (y <= TOP || y >= max - 4){
+      navEl.classList.remove('tucked');           // top of the page, or the end of it
+    } else if (y > lastY + DEADZONE){
+      navEl.classList.add('tucked');              // heading down — get out of the way
+    } else if (y < lastY - DEADZONE){
+      navEl.classList.remove('tucked');           // heading back up — come back
+    }
+    if (Math.abs(y - lastY) > DEADZONE) lastY = y;
+  }
+
+  window.addEventListener('scroll', function(){
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function(){ update(); queued = false; });
+  }, { passive:true });
+
+  /* a shorter tab can leave us scrolled past its end with the bar hidden */
+  document.querySelector('nav').addEventListener('click', function(){
+    navEl.classList.remove('tucked');
+    lastY = window.scrollY || 0;
+  });
+})();
 
 /* ---------- boot ---------- */
 function boot(){
