@@ -60,7 +60,8 @@ header{
 
 main{max-width:520px; margin:0 auto}
 .view{display:none; padding:8px 18px 24px}
-body[data-tab="week"] #view-week, body[data-tab="wheel"] #view-wheel, body[data-tab="ideas"] #view-ideas{display:block}
+body[data-tab="week"] #view-week, body[data-tab="wheel"] #view-wheel,
+body[data-tab="recipes"] #view-recipes, body[data-tab="ideas"] #view-ideas{display:block}
 h2{font-size:17px; font-weight:900; margin:18px 0 10px}
 h2 small{font-weight:700; color:var(--muted); font-size:12px}
 
@@ -80,7 +81,7 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
 .slot .emoji{font-size:30px; width:40px; text-align:center}
 .slot .body{flex:1; min-width:0}
 .slot .name{font-weight:900; font-size:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.slot .meta{font-size:12px; color:var(--muted); font-weight:700; margin-top:2px; display:flex; gap:8px; align-items:center}
+.slot .meta{font-size:12px; color:var(--muted); font-weight:700; margin-top:2px; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
 .daychip{
   background:#F4E8C2; border-radius:7px; padding:2px 8px; font-weight:800; font-size:11px; color:var(--ink)
 }
@@ -187,6 +188,49 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
 .shortlistbar .slclear{color:var(--muted); font-weight:800; font-size:12px}
 .filters .shortnote{font-weight:800; font-size:13px; color:var(--basil); align-self:center}
 
+/* recipes */
+#newrname, #newrings{margin-top:8px}
+.srcbadge{display:none; margin-top:8px; font-size:12.5px; font-weight:800; color:var(--basil)}
+.srcbadge.show{display:block}
+.srcrow{display:flex; gap:8px; overflow-x:auto; padding:2px 18px 8px; margin:0 -18px; scrollbar-width:none}
+.srcrow::-webkit-scrollbar{display:none}
+.srcrow .chip{flex:0 0 auto; white-space:nowrap}
+.recipe{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:12px 14px; margin:8px 0; box-shadow:var(--shadow);
+}
+.reciperow{display:flex; align-items:center; gap:12px}
+.recipe .emoji{font-size:24px; width:32px; text-align:center}
+.recipe .body{flex:1; min-width:0}
+.recipe .name{font-weight:900; font-size:15px}
+.recipe .meta{font-size:11.5px; color:var(--muted); font-weight:700; margin-top:1px}
+.recipeacts{display:flex; flex-direction:column; gap:6px; align-items:flex-end}
+.openbtn{
+  background:#EAF0F8; color:var(--denim); font-weight:800; font-size:12px; border-radius:9px;
+  padding:7px 11px; white-space:nowrap; text-decoration:none; display:inline-block;
+}
+.recipe .planbtn{background:#F4E8C2; font-weight:800; font-size:12px; border-radius:9px; padding:7px 11px; white-space:nowrap}
+.recipe .planbtn:disabled{opacity:.4}
+.recipeedit{margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; display:none}
+.recipe.open .recipeedit{display:block}
+.recipeedit input[type=text], .recipeedit textarea, .recipeedit select{
+  width:100%; border:1px solid var(--line); border-radius:10px; padding:9px 12px; background:#fff;
+}
+.recipeedit textarea{min-height:96px; resize:vertical}
+.fieldlab{font-size:10.5px; font-weight:800; color:var(--muted); letter-spacing:.4px; margin:10px 0 4px}
+.recipeedit .fieldlab:first-child{margin-top:0}
+.inglist{
+  background:#FBF6E6; border:1px solid var(--line); border-radius:10px; padding:9px 12px;
+  font-size:13px; font-weight:700; white-space:pre-wrap; word-break:break-word;
+}
+.inglist.none{color:var(--muted); font-style:italic}
+.linkline{margin-top:10px}
+.linkbtn{color:var(--denim); font-weight:800; font-size:13px; padding:0}
+.recipechip{
+  background:#EAF0F8; color:var(--denim); border-radius:7px; padding:2px 8px;
+  font-weight:800; font-size:11px; text-decoration:none; white-space:nowrap;
+}
+
 /* tabbar */
 nav{
   position:fixed; bottom:0; left:0; right:0; z-index:30;
@@ -200,7 +244,8 @@ nav button{
   font-size:11px; font-weight:800; color:var(--muted); border-radius:12px; padding:7px 0;
 }
 nav button .ico{font-size:22px; line-height:1}
-body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[data-tab="ideas"] nav .t-ideas{color:var(--ink); background:#F4E8C2}
+body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel,
+body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{color:var(--ink); background:#F4E8C2}
 
 /* overlays */
 .overlay{
@@ -283,6 +328,21 @@ body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[dat
     </div>
   </section>
 
+  <section class="view" id="view-recipes">
+    <h2>Add a recipe</h2>
+    <div class="addcard">
+      <input type="text" id="newurl" placeholder="🔗 Paste a link (optional)" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="srcbadge" id="srcbadge"></div>
+      <input type="text" id="newrname" placeholder="Recipe name" maxlength="40" autocomplete="off">
+      <textarea id="newrings" placeholder="Ingredients — one per line"></textarea>
+      <div class="addrow"><span></span><button class="addbtn" id="addrbtn">Add</button></div>
+    </div>
+    <h2>The library <small id="libcount"></small></h2>
+    <div class="srcrow" id="srcrow"></div>
+    <input type="text" id="recipesearch" class="ideasearch" placeholder="🔎 Search recipes" maxlength="40" autocomplete="off">
+    <div id="recipes"></div>
+  </section>
+
   <section class="view" id="view-ideas">
     <h2>Add a meal idea <small>+2 pts</small></h2>
     <div class="addcard">
@@ -302,6 +362,7 @@ body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel, body[dat
 <nav>
   <button class="t-week" data-tab="week"><span class="ico">🍽️</span>This week</button>
   <button class="t-wheel" data-tab="wheel"><span class="ico">🎡</span>Wheel</button>
+  <button class="t-recipes" data-tab="recipes"><span class="ico">📖</span>Recipes</button>
   <button class="t-ideas" data-tab="ideas"><span class="ico">💡</span>Ideas</button>
 </nav>
 
@@ -354,7 +415,28 @@ var RECENT_MS = 14*24*60*60*1000;
 var NAMES = { mark:'Mark', jenny:'Jenny', wheel:'the wheel' };
 var SHORTLIST_MAX = 5;
 
+/* Recipe sources we actually cook from. `key` is what gets stored on a recipe
+   (never recomputed), `hosts` only seeds the guess when a link is pasted — the
+   edit panel can always correct it. YouTube guesses Helen's, which is where
+   our video recipes come from; change it on the card if it isn't. */
+var SOURCES = [
+  { key:'recipetin', label:'RecipeTin',  full:'RecipeTin Eats',     hosts:['recipetineats.com'] },
+  { key:'hotthai',   label:'Hot Thai',   full:'Hot Thai Kitchen',   hosts:['hot-thai-kitchen.com','hotthaikitchen.com'] },
+  { key:'maangchi',  label:'Maangchi',   full:'Maangchi',           hosts:['maangchi.com'] },
+  { key:'mykorean',  label:'My Korean',  full:'My Korean Kitchen',  hosts:['mykoreankitchen.com'] },
+  { key:'vicky',     label:'Vicky Pham', full:'Vicky Pham',         hosts:['vickypham.com'] },
+  { key:'vietworld', label:'Viet World', full:'Viet World Kitchen', hosts:['vietworldkitchen.com'] },
+  { key:'helen',     label:"Helen's",    full:"Helen's Recipes",    hosts:['helenrecipes.com','youtube.com','youtu.be'] },
+  { key:'other',     label:'Other',      full:'Other',              hosts:[] }
+];
+
 var EMOJI_MAP = [
+  ['bun cha','🍜'],['bun bo','🍜'],['pho','🍜'],['banh mi','🥖'],['banh xeo','🥞'],
+  ['com tam','🍚'],['goi cuon','🥙'],['cha gio','🥟'],['nem','🥟'],['caramel','🍲'],
+  ['bibimbap','🍚'],['bulgogi','🥩'],['galbi','🍖'],['kalbi','🍖'],['kimchi','🥬'],
+  ['japchae','🍜'],['tteok','🌶️'],['sundubu','🍲'],['samgyeopsal','🥓'],['jjigae','🍲'],
+  ['pad see','🍜'],['pad thai','🍜'],['som tam','🥗'],['larb','🥗'],['tom yum','🍲'],
+  ['massaman','🍛'],['khao','🍚'],['satay','🍢'],['laksa','🍜'],
   ['taco','🌮'],['burrito','🌯'],['pasta','🍝'],['spag','🍝'],['bolog','🍝'],['lasag','🍝'],
   ['pizza','🍕'],['curry','🍛'],['butter chicken','🍛'],['stir','🥡'],['noodle','🍜'],['ramen','🍜'],
   ['pho','🍜'],['soup','🍲'],['stew','🍲'],['salad','🥗'],['burger','🍔'],['fish','🐟'],
@@ -377,6 +459,8 @@ var state = null;
 var user = localStorage.getItem('dw-user') || '';
 var wheelState = { spinning:false, candidates:[], angle:0, efforts:[], includeRecent:false, excludeId:null };
 var pendingResult = null;   // {ideaId, slotIdx}
+var recipeFilter = '';      // source key, '' = all
+var openRecipeId = null;    // recipe to open + scroll to on the next render
 var rolling = false;
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
@@ -424,6 +508,7 @@ function seedState(){
 
 /* safe getters (Firebase drops empty nodes) */
 function ideas(){ return (state && state.ideas) || {}; }
+function recipes(){ return (state && state.recipes) || {}; }
 function week(){ return (state && state.week) || freshWeek(3); }
 function slots(){ return week().slots || {}; }
 function slot(i){ return slots()[String(i)] || null; }
@@ -576,6 +661,79 @@ function agoLabel(ts){
   if (days<7) return days+'d ago';
   return Math.floor(days/7)+'w ago';
 }
+/* ---------- recipes ---------- */
+/* Only ever render http(s) in an href — a pasted javascript: URL must not
+   become a tappable link. */
+function safeUrl(u){
+  u = String(u==null?'':u).trim();
+  return /^https?:\/\//i.test(u) ? u : '';
+}
+function sourceMeta(key){
+  for (var i=0;i<SOURCES.length;i++){ if (SOURCES[i].key === key) return SOURCES[i]; }
+  return SOURCES[SOURCES.length-1];   // 'other'
+}
+function sourceFor(url){
+  var u = safeUrl(url); if (!u) return 'other';
+  var host;
+  try { host = new URL(u).hostname.toLowerCase().replace(/^www\./,''); } catch(e){ return 'other'; }
+  for (var i=0;i<SOURCES.length;i++){
+    var hs = SOURCES[i].hosts;
+    for (var j=0;j<hs.length;j++){
+      if (host === hs[j] || host.slice(-(hs[j].length+1)) === '.'+hs[j]) return SOURCES[i].key;
+    }
+  }
+  return 'other';
+}
+/* A convenience guess from the URL slug, not a scraper — the page itself is
+   never fetched (static host + no CORS). The user fixes it up. */
+function slugName(url){
+  var u = safeUrl(url); if (!u) return '';
+  var path;
+  try {
+    var o = new URL(u);
+    if (/youtu\.be$|youtube\.com$/.test(o.hostname.replace(/^www\./,''))) return '';  // opaque slugs
+    path = o.pathname;
+  } catch(e){ return ''; }
+  var parts = path.split('/').filter(Boolean);
+  var last = parts.pop() || '';
+  last = last.replace(/\.(html?|php|aspx)$/i,'').replace(/-\d{4,}$/,'');
+  var words = last.replace(/[-_+]+/g,' ').replace(/\s+/g,' ').trim();
+  if (!words || /^\d+$/.test(words)) return '';
+  return (words.charAt(0).toUpperCase() + words.slice(1)).slice(0,40);
+}
+function recipeOfIdea(idea){
+  var r = idea && idea.recipeId ? recipes()[idea.recipeId] : null;
+  return r || null;
+}
+function ideaIdForRecipe(rid){
+  var all = ideas(), keys = Object.keys(all);
+  for (var i=0;i<keys.length;i++){ if (all[keys[i]].recipeId === rid) return keys[i]; }
+  return null;
+}
+function normName(n){ return String(n==null?'':n).trim().toLowerCase(); }
+function findRecipeByName(name){
+  var all = recipes(), keys = Object.keys(all), n = normName(name);
+  for (var i=0;i<keys.length;i++){ if (normName(all[keys[i]].name) === n) return keys[i]; }
+  return null;
+}
+/* An idea we may adopt for a new recipe: same name, not already spoken for. */
+function findFreeIdeaByName(name){
+  var all = ideas(), keys = Object.keys(all), n = normName(name);
+  for (var i=0;i<keys.length;i++){
+    var o = all[keys[i]];
+    if (normName(o.name) === n && !recipeOfIdea(o)) return keys[i];
+  }
+  return null;
+}
+function jumpToRecipe(rid){
+  openRecipeId = rid;
+  recipeFilter = '';                                   // don't let a filter hide it
+  var sEl = document.getElementById('recipesearch');
+  if (sEl) sEl.value = '';
+  document.body.dataset.tab = 'recipes';
+  render();
+}
+
 var toastTimer = null;
 function toast(msg){
   var t = document.getElementById('toast');
@@ -624,7 +782,7 @@ function migrateEfforts(){
 function render(){
   if (!state) return;
   migrateEfforts();
-  renderHeader(); renderWeek(); renderWheel(); renderIdeas();
+  renderHeader(); renderWeek(); renderWheel(); renderRecipes(); renderIdeas();
 }
 
 function renderHeader(){
@@ -659,6 +817,11 @@ function renderWeek(){
     var idea = s && s.ideaId ? ideas()[s.ideaId] : null;
     if (idea){
       var day = s.day ? s.day : 'any day';
+      /* one tap from tonight's dinner to the method on the source site */
+      var rc = recipeOfIdea(idea), rcUrl = rc ? safeUrl(rc.url) : '';
+      var rchip = rcUrl
+        ? '<a class="recipechip" href="'+esc(rcUrl)+'" target="_blank" rel="noopener">📖 '+esc(sourceMeta(rc.source||'other').label)+' ↗</a>'
+        : '';
       html += '<div class="slot" data-i="'+i+'">'
         + '<div class="emoji">'+esc(idea.emoji)+'</div>'
         + '<div class="body">'
@@ -666,7 +829,8 @@ function renderWeek(){
         +   '<div class="name">'+esc(idea.name)+'</div>'
         +   '<div class="meta"><button class="daychip" data-act="day" data-i="'+i+'">'+esc(day)+'</button>'
         +   '<span>'+EFFORT_ICON[idea.effort||'standard']+' '+esc(idea.effort||'standard')+'</span>'
-        +   '<span class="byline '+esc(idea.by||'wheel')+'">by '+esc(NAMES[idea.by]||idea.by||'the wheel')+'</span></div>'
+        +   '<span class="byline '+esc(idea.by||'wheel')+'">by '+esc(NAMES[idea.by]||idea.by||'the wheel')+'</span>'
+        +   rchip + '</div>'
         + '</div>'
         + '<div class="actions">'
         +   (s.cooked
@@ -941,10 +1105,11 @@ function renderIdeas(){
       + ' · ' + (o.cooked ? 'cooked '+o.cooked+'× · '+agoLabel(o.last) : 'never cooked');
     var inWeek = planned[e.id];
     var picked = !!sl[e.id];
+    var rec = recipeOfIdea(o);
     html += '<div class="idea'+(picked?' picked':'')+'" data-id="'+e.id+'">'
       + '<div class="idearow">'
       +   '<div class="emoji">'+esc(o.emoji)+'</div>'
-      +   '<div class="body" data-act="toggle"><div class="name">'+esc(o.name)+'</div><div class="meta">'+meta+'</div></div>'
+      +   '<div class="body" data-act="toggle"><div class="name">'+(rec?'📖 ':'')+esc(o.name)+'</div><div class="meta">'+meta+'</div></div>'
       +   '<div class="ideaacts">'
       +     (inWeek
               ? '<button class="selbtn" disabled>on the menu</button>'
@@ -956,6 +1121,12 @@ function renderIdeas(){
       + '</div>'
       + '<div class="ideaedit">'
       +   '<input type="text" class="e-name" value="'+esc(o.name)+'" maxlength="40">'
+      /* ingredients live on the recipe when there is one, so they can't drift */
+      +   (rec
+            ? '<div class="fieldlab">INGREDIENTS — FROM THE RECIPE</div>'
+              + '<div class="inglist'+(rec.ings?'':' none')+'">'+esc(rec.ings || 'None listed yet')+'</div>'
+              + '<div class="linkline"><button class="linkbtn" data-act="viewrecipe">📖 Edit in recipe →</button></div>'
+            : '<div class="linkline"><button class="linkbtn" data-act="promote">📖 Promote to recipe</button></div>')
       +   '<div class="editrow"><button class="delbtn" data-act="del">Delete</button>'
       +   '<button class="savebtn" data-act="save">Save</button></div>'
       + '</div></div>';
@@ -1001,6 +1172,175 @@ function addIdea(){
   }});
   nameEl.value='';
   toast('Added '+name);
+}
+
+/* ---------- recipes ---------- */
+function renderRecipes(){
+  /* a sync update from the other phone mustn't close an open edit panel or wipe typing */
+  var openEdits = {};
+  document.querySelectorAll('#recipes .recipe.open').forEach(function(c){
+    openEdits[c.dataset.id] = {
+      'e-name':   c.querySelector('.e-name').value,
+      'e-url':    c.querySelector('.e-url').value,
+      'e-ings':   c.querySelector('.e-ings').value,
+      'e-notes':  c.querySelector('.e-notes').value,
+      'e-serves': c.querySelector('.e-serves').value,
+      'e-src':    c.querySelector('.e-src').value
+    };
+  });
+  var af = document.activeElement, refocus = null;
+  var EDITABLE = ['e-name','e-url','e-ings','e-notes','e-serves'];
+  if (af && af.closest){
+    var afCard = af.closest('#recipes .recipe');
+    for (var k=0; afCard && k<EDITABLE.length; k++){
+      if (af.classList.contains(EDITABLE[k])){
+        refocus = { id: afCard.dataset.id, cls: EDITABLE[k], s: af.selectionStart, e: af.selectionEnd };
+        break;
+      }
+    }
+  }
+
+  var list = Object.keys(recipes()).map(function(id){ return { id:id, r:recipes()[id] }; });
+  list.sort(function(a,b){ return (b.r.at||0)-(a.r.at||0); });
+
+  /* source chips — only for sources that actually hold something */
+  var counts = {};
+  list.forEach(function(e){ var key = e.r.source||'other'; counts[key] = (counts[key]||0)+1; });
+  if (recipeFilter && !counts[recipeFilter]) recipeFilter = '';   // last one of a source deleted
+  var chips = '';
+  if (list.length){
+    chips = '<button class="chip '+(recipeFilter===''?'on':'')+'" data-src="">all '+list.length+'</button>';
+    SOURCES.forEach(function(src){
+      if (!counts[src.key]) return;
+      chips += '<button class="chip '+(recipeFilter===src.key?'on':'')+'" data-src="'+src.key+'">'
+             + esc(src.label)+' '+counts[src.key]+'</button>';
+    });
+  }
+  document.getElementById('srcrow').innerHTML = chips;
+
+  var searchEl = document.getElementById('recipesearch');
+  var q = (searchEl && searchEl.value || '').trim().toLowerCase();
+  var shown = list.filter(function(e){
+    if (recipeFilter && (e.r.source||'other') !== recipeFilter) return false;
+    if (q && (e.r.name||'').toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  });
+  document.getElementById('libcount').textContent = !list.length ? ''
+    : (shown.length === list.length ? list.length+' recipe'+(list.length>1?'s':'') : shown.length+' of '+list.length);
+
+  var planned = plannedIds();
+  var canPlan = nextEmpty() !== -1;
+  var html = '';
+  shown.forEach(function(e){
+    var r = e.r;
+    var sm = sourceMeta(r.source||'other');
+    var url = safeUrl(r.url);
+    var iid = ideaIdForRecipe(e.id);
+    var nIngs = (r.ings||'').split('\n').filter(function(l){ return l.trim(); }).length;
+    var by = r.by||'wheel';
+    var meta = esc(sm.full)
+      + ' · ' + (nIngs ? nIngs+' ingredient'+(nIngs>1?'s':'') : 'no ingredients yet')
+      + ' · <span class="byline '+esc(by)+'">'+esc(NAMES[by]||by)+'</span>';
+    var inWeek = iid && planned[iid];
+    var opts = '';
+    SOURCES.forEach(function(src){
+      opts += '<option value="'+src.key+'"'+((r.source||'other')===src.key?' selected':'')+'>'+esc(src.full)+'</option>';
+    });
+    html += '<div class="recipe" data-id="'+e.id+'">'
+      + '<div class="reciperow">'
+      +   '<div class="emoji">'+esc(r.emoji||'\U0001F37D️')+'</div>'
+      +   '<div class="body" data-act="rtoggle"><div class="name">'+esc(r.name)+'</div><div class="meta">'+meta+'</div></div>'
+      +   '<div class="recipeacts">'
+      +     (url ? '<a class="openbtn" href="'+esc(url)+'" target="_blank" rel="noopener">Open ↗</a>' : '')
+      +     (inWeek
+              ? '<button class="planbtn" disabled>planned</button>'
+              : '<button class="planbtn" data-act="rplan" '+(canPlan?'':'disabled')+'>+ this week</button>')
+      +   '</div>'
+      + '</div>'
+      + '<div class="recipeedit">'
+      +   '<div class="fieldlab">NAME</div>'
+      +   '<input type="text" class="e-name" value="'+esc(r.name)+'" maxlength="40">'
+      +   '<div class="fieldlab">LINK</div>'
+      +   '<input type="text" class="e-url" value="'+esc(r.url||'')+'" placeholder="https://..." autocapitalize="off" spellcheck="false">'
+      +   '<div class="fieldlab">SOURCE</div>'
+      +   '<select class="e-src">'+opts+'</select>'
+      +   '<div class="fieldlab">INGREDIENTS — ONE PER LINE</div>'
+      +   '<textarea class="e-ings">'+esc(r.ings||'')+'</textarea>'
+      +   '<div class="fieldlab">NOTES</div>'
+      +   '<input type="text" class="e-notes" value="'+esc(r.notes||'')+'" maxlength="80" placeholder="e.g. double the sauce">'
+      +   '<div class="fieldlab">SERVES</div>'
+      +   '<input type="text" class="e-serves" value="'+esc(r.serves||'')+'" maxlength="2" inputmode="numeric">'
+      +   '<div class="editrow"><button class="delbtn" data-act="rdel">Delete</button>'
+      +   '<button class="savebtn" data-act="rsave">Save</button></div>'
+      + '</div></div>';
+  });
+  var emptyMsg = !list.length
+    ? 'No recipes yet. Paste a link from one of your regulars above.'
+    : (q ? 'No recipes match "'+esc(q)+'".' : 'Nothing from that source yet.');
+  document.getElementById('recipes').innerHTML = html || '<div class="empty-ideas">'+emptyMsg+'</div>';
+
+  Object.keys(openEdits).forEach(function(id){
+    var c = document.querySelector('#recipes .recipe[data-id="'+id+'"]');
+    if (!c) return;
+    c.classList.add('open');
+    Object.keys(openEdits[id]).forEach(function(cls){
+      var f = c.querySelector('.'+cls);
+      if (f) f.value = openEdits[id][cls];
+    });
+  });
+  if (refocus){
+    var rc = document.querySelector('#recipes .recipe[data-id="'+refocus.id+'"] .'+refocus.cls);
+    if (rc){ rc.focus(); try { rc.setSelectionRange(refocus.s, refocus.e); } catch(e){} }
+  }
+  /* arriving from "Edit in recipe" or "Promote to recipe" */
+  if (openRecipeId){
+    var oc = document.querySelector('#recipes .recipe[data-id="'+openRecipeId+'"]');
+    openRecipeId = null;
+    if (oc){
+      oc.classList.add('open');
+      oc.scrollIntoView({ block:'center', behavior:'smooth' });
+    }
+  }
+}
+
+function addRecipe(){
+  var urlEl = document.getElementById('newurl');
+  var nameEl = document.getElementById('newrname');
+  var ingsEl = document.getElementById('newrings');
+  var raw = urlEl.value.trim();
+  var url = safeUrl(raw);
+  if (raw && !url){ toast('Links need to start with http:// or https://'); urlEl.focus(); return; }
+  var name = (nameEl.value.trim() || slugName(url)).slice(0,40);
+  if (!name){ nameEl.focus(); toast('Give it a name'); return; }
+
+  var dupe = findRecipeByName(name);
+  if (dupe){ toast(name+' is already in your library'); jumpToRecipe(dupe); return; }
+
+  var ings = ingsEl.value.replace(/\s+$/,'');
+  var rid = uid(), now = Date.now(), emoji = pickEmoji(name);
+  var patch = {};
+  patch['recipes/'+rid] = {
+    name:name, emoji:emoji, url:url, source:sourceFor(url),
+    ings:ings, notes:'', serves:'', by:user||'wheel', at:now
+  };
+  /* every recipe needs a spinnable idea behind it — adopt a matching one if
+     it's free, otherwise make a new one. `ings` is mirrored so the shopping
+     list (which only ever reads ideas) needs no changes at all. */
+  var iid = findFreeIdeaByName(name), adopted = !!iid;
+  if (adopted){
+    patch['ideas/'+iid+'/recipeId'] = rid;
+    patch['ideas/'+iid+'/ings'] = ings;
+  } else {
+    iid = uid();
+    patch['ideas/'+iid] = {
+      name:name, emoji:emoji, effort:'standard', ings:ings,
+      by:user||'wheel', at:now, cooked:0, last:0, recipeId:rid
+    };
+  }
+  Store.patch(patch);
+  urlEl.value=''; nameEl.value=''; ingsEl.value='';
+  document.getElementById('srcbadge').classList.remove('show');
+  toast(adopted ? 'Linked to your existing idea ✓' : 'Added '+name);
 }
 
 /* ---------- events ---------- */
@@ -1144,6 +1484,93 @@ document.getElementById('res-veto').addEventListener('click', function(){
   }, 500);
 });
 
+/* ----- recipes tab ----- */
+document.getElementById('newurl').addEventListener('input', function(){
+  var badge = document.getElementById('srcbadge');
+  var url = safeUrl(this.value);
+  if (!url){ badge.classList.remove('show'); return; }
+  var sm = sourceMeta(sourceFor(url));
+  badge.textContent = sm.key === 'other' ? '\U0001F517 Link added' : '✓ '+sm.full;
+  badge.classList.add('show');
+  var nameEl = document.getElementById('newrname');
+  if (!nameEl.value.trim()){
+    var guess = slugName(url);      // from the URL slug only — nothing is fetched
+    if (guess) nameEl.value = guess;
+  }
+});
+document.getElementById('addrbtn').addEventListener('click', addRecipe);
+document.getElementById('view-recipes').addEventListener('keydown', function(ev){
+  if (ev.key === 'Enter' && (ev.target.id === 'newurl' || ev.target.id === 'newrname')){
+    ev.preventDefault();
+    addRecipe();
+  }
+});
+document.getElementById('recipesearch').addEventListener('input', renderRecipes);
+document.getElementById('srcrow').addEventListener('click', function(ev){
+  var b = ev.target.closest('button[data-src]');
+  if (!b) return;
+  recipeFilter = b.dataset.src;
+  renderRecipes();
+});
+document.getElementById('recipes').addEventListener('click', function(ev){
+  var card = ev.target.closest('.recipe');
+  if (!card) return;
+  var id = card.dataset.id;
+  var b = ev.target.closest('[data-act]');
+  if (!b) return;
+  var act = b.dataset.act;
+  if (act === 'rtoggle'){ card.classList.toggle('open'); }
+  else if (act === 'rplan'){
+    var idx = nextEmpty();
+    if (idx === -1) return;
+    var r = recipes()[id]; if (!r) return;
+    var iid = ideaIdForRecipe(id);
+    if (!iid){
+      /* link lost (its idea was deleted) — rebuild one so the recipe stays plannable */
+      iid = uid();
+      Store.patch({ ['ideas/'+iid]: {
+        name:r.name, emoji:r.emoji||pickEmoji(r.name), effort:'standard', ings:r.ings||'',
+        by:user||'wheel', at:Date.now(), cooked:0, last:0, recipeId:id
+      }});
+    }
+    lockIn(iid, idx, false);
+  }
+  else if (act === 'rsave'){
+    var name = card.querySelector('.e-name').value.trim().slice(0,40);
+    if (!name){ toast('Name can\'t be empty'); return; }
+    var rawUrl = card.querySelector('.e-url').value.trim();
+    var url = safeUrl(rawUrl);
+    if (rawUrl && !url){ toast('Links need to start with http:// or https://'); return; }
+    var ings = card.querySelector('.e-ings').value.replace(/\s+$/,'');
+    var patch = {};
+    patch['recipes/'+id+'/name']   = name;
+    patch['recipes/'+id+'/emoji']  = pickEmoji(name);
+    patch['recipes/'+id+'/url']    = url;
+    patch['recipes/'+id+'/source'] = card.querySelector('.e-src').value;
+    patch['recipes/'+id+'/ings']   = ings;
+    patch['recipes/'+id+'/notes']  = card.querySelector('.e-notes').value.trim();
+    patch['recipes/'+id+'/serves'] = card.querySelector('.e-serves').value.replace(/[^0-9]/g,'');
+    var liid = ideaIdForRecipe(id);
+    if (liid){
+      /* same patch, so the idea's copy can never drift from the recipe */
+      patch['ideas/'+liid+'/ings']  = ings;
+      patch['ideas/'+liid+'/name']  = name;
+      patch['ideas/'+liid+'/emoji'] = pickEmoji(name);
+    }
+    Store.patch(patch);
+    card.classList.remove('open');
+    toast('Saved');
+  }
+  else if (act === 'rdel'){
+    if (!confirm('Delete this recipe? The meal stays in your idea bank.')) return;
+    var patch2 = {};
+    patch2['recipes/'+id] = null;
+    var diid = ideaIdForRecipe(id);
+    if (diid) patch2['ideas/'+diid+'/recipeId'] = null;
+    Store.patch(patch2);
+  }
+});
+
 document.getElementById('neweffort').addEventListener('click', function(ev){
   var b = ev.target.closest('button[data-eff]');
   if (!b) return;
@@ -1182,11 +1609,32 @@ document.getElementById('ideas').addEventListener('click', function(ev){
   else if (act === 'save'){
     var name = card.querySelector('.e-name').value.trim();
     if (!name) return;
-    Store.patch({
-      ['ideas/'+id+'/name']: name,
-      ['ideas/'+id+'/emoji']: pickEmoji(name)
-    });
+    var patch = { ['ideas/'+id+'/name']: name, ['ideas/'+id+'/emoji']: pickEmoji(name) };
+    var rec = recipeOfIdea(ideas()[id]);
+    if (rec){   // they're the same meal — keep the library in step
+      patch['recipes/'+ideas()[id].recipeId+'/name'] = name;
+      patch['recipes/'+ideas()[id].recipeId+'/emoji'] = pickEmoji(name);
+    }
+    Store.patch(patch);
     card.classList.remove('open');
+  }
+  else if (act === 'viewrecipe'){
+    var o = ideas()[id];
+    if (o && recipeOfIdea(o)) jumpToRecipe(o.recipeId);
+  }
+  else if (act === 'promote'){
+    var po = ideas()[id];
+    if (!po || recipeOfIdea(po)) return;
+    var prid = uid();
+    Store.patch({
+      ['recipes/'+prid]: {
+        name:po.name, emoji:po.emoji||pickEmoji(po.name), url:'', source:'other',
+        ings:po.ings||'', notes:'', serves:'', by:user||'wheel', at:Date.now()
+      },
+      ['ideas/'+id+'/recipeId']: prid
+    });
+    jumpToRecipe(prid);
+    toast('In the library — add the link \U0001F4D6');
   }
   else if (act === 'del'){
     if (!confirm('Delete this idea?')) return;
