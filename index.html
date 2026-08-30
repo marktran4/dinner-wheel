@@ -78,6 +78,9 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
   display:flex; gap:8px; align-items:center; flex-wrap:wrap;
 }
 .slot .metalink{margin-top:5px}
+/* the day chip used to separate these; without it the effort and the name ran
+   together as one phrase */
+.slot .meta > span + span::before{content:"·"; padding-right:8px; opacity:.5}
 /* on a narrow phone the emoji and the Cooked button squeeze the text column
    until the meta breaks over three lines — give it the room back */
 @media (max-width:359px){
@@ -303,7 +306,6 @@ body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{col
   <section class="view" id="view-week">
     <div class="weekhead">
       <h2>This week's dinners</h2>
-      <div class="seg" id="slotseg"></div>
     </div>
     <div id="slots"></div>
     <button class="newweekbtn" data-act="newweek" id="newweekbtn">Start next week</button>
@@ -479,12 +481,18 @@ function monthKey(d){
   return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0');
 }
 
-function freshWeekAt(key, slotCount){
-  return { key: key, slotCount: slotCount||3 };
+var MAX_SLOTS = 4;
+function freshWeekAt(key){ return { key: key }; }
+function freshWeek(){ return freshWeekAt(weekKey()); }
+
+/* One past the last meal you've planned — so the week shows what's in it plus
+   one empty slot inviting the next, and never a row of dead cards. */
+function usedSlots(){
+  var n = 0;
+  for (var i=0;i<MAX_SLOTS;i++){ if (slotFilled(i)) n = i+1; }
+  return n;
 }
-function freshWeek(slotCount){
-  return freshWeekAt(weekKey(), slotCount);
-}
+function visibleSlots(){ return Math.min(MAX_SLOTS, usedSlots() + 1); }
 function nextWeekKey(){
   var d = new Date();
   d.setDate(d.getDate()+7);   // any day next calendar week -> its Monday
@@ -495,20 +503,20 @@ function seedState(){
   SEED_IDEAS.forEach(function(s,i){
     ideas['seed'+i] = { name:s[0], emoji:s[1], effort:s[2], ings:'', by:'wheel', at:Date.now(), cooked:0, last:0 };
   });
-  return { ideas:ideas, week:freshWeek(3), cooks:{key:monthKey(), count:0}, shop:{}, extras:{} };
+  return { ideas:ideas, week:freshWeek(), cooks:{key:monthKey(), count:0}, shop:{}, extras:{} };
 }
 
 /* safe getters (Firebase drops empty nodes) */
 function ideas(){ return (state && state.ideas) || {}; }
 function recipes(){ return (state && state.recipes) || {}; }
-function week(){ return (state && state.week) || freshWeek(3); }
+function week(){ return (state && state.week) || freshWeek(); }
 function slots(){ return week().slots || {}; }
 function slot(i){ return slots()[String(i)] || null; }
 function shop(){ return (state && state.shop) || {}; }
 function extras(){ return (state && state.extras) || {}; }
 function plannedIds(){
-  var w = week(), out = {};
-  for (var i=0;i<w.slotCount;i++){ var s=slot(i); if (s && s.ideaId) out[s.ideaId]=true; }
+  var out = {};
+  for (var i=0;i<MAX_SLOTS;i++){ var s=slot(i); if (s && s.ideaId) out[s.ideaId]=true; }
   return out;
 }
 function slotFilled(i){
@@ -516,8 +524,7 @@ function slotFilled(i){
   return !!(s && s.ideaId && ideas()[s.ideaId]);  // a deleted idea leaves the slot re-fillable
 }
 function nextEmpty(){
-  var w = week();
-  for (var i=0;i<w.slotCount;i++){ if (!slotFilled(i)) return i; }
+  for (var i=0;i<MAX_SLOTS;i++){ if (!slotFilled(i)) return i; }
   return -1;
 }
 
@@ -624,7 +631,7 @@ function rolloverIfNeeded(){
   // Monday (set by "Start next week") is a deliberate plan-ahead — never wipe it.
   if (w.key >= nowKey) return;
   rolling = true;
-  Store.patch({ 'week': freshWeek(w.slotCount) });
+  Store.patch({ 'week': freshWeek() });
   rolling = false;
 }
 
@@ -818,16 +825,10 @@ function renderWeek(){
   var exVal = exEl ? exEl.value : '';
   var exFocus = exEl && document.activeElement === exEl;
 
-  /* slot count segmented */
-  var seg = '';
-  [2,3,4].forEach(function(n){
-    seg += '<button data-n="'+n+'" class="'+(w.slotCount===n?'on':'')+'">'+n+'</button>';
-  });
-  document.getElementById('slotseg').innerHTML = seg;
-
   /* slots */
   var html = '';
-  for (var i=0;i<w.slotCount;i++){
+  var shown = visibleSlots();
+  for (var i=0;i<shown;i++){
     var s = slot(i);
     var idea = s && s.ideaId ? ideas()[s.ideaId] : null;
     if (idea){
@@ -866,8 +867,8 @@ function renderWeek(){
   document.getElementById('slots').innerHTML = html;
 
   /* shop list */
-  var w2 = week(), items = [], done = 0;
-  for (var j=0;j<w2.slotCount;j++){
+  var items = [], done = 0;
+  for (var j=0;j<MAX_SLOTS;j++){
     var sj = slot(j);
     var ij = sj && sj.ideaId ? ideas()[sj.ideaId] : null;
     if (!ij || !ij.ings) continue;
@@ -908,8 +909,8 @@ function renderWeek(){
 /* ---------- planning a slot ---------- */
 function lockIn(ideaId, slotIdx){
   var w = week();
-  var wasLast = true;
-  for (var i=0;i<w.slotCount;i++){
+  var wasLast = true;   // filling the fourth and last slot
+  for (var i=0;i<MAX_SLOTS;i++){
     if (i !== slotIdx && !slotFilled(i)){ wasLast = false; break; }
   }
   var bonus = wasLast && !w.bonus;   // celebrate a full week once, not on every swap
@@ -1190,23 +1191,13 @@ document.querySelector('nav').addEventListener('click', function(ev){
   if (b) document.body.dataset.tab = b.dataset.tab;
 });
 
-document.getElementById('slotseg').addEventListener('click', function(ev){
-  var b = ev.target.closest('button[data-n]');
-  if (!b) return;
-  var n = +b.dataset.n;
-  // Shrinking just hides the extra slots (everything reads up to slotCount, so
-  // they're inert while hidden). Keep their meals so they come back if you grow
-  // the count again — no accidental data loss from a mis-tap.
-  Store.patch({ 'week/slotCount': n });
-});
-
 document.getElementById('view-week').addEventListener('click', function(ev){
   var b = ev.target.closest('[data-act]');
   if (!b) return;
   var act = b.dataset.act, i = +b.dataset.i;
   if (act === 'newweek'){
     if (!confirm('Start next week? This clears the current dinners and cooked ticks so you can plan the week ahead. Your idea bank, recipes and shopping list stay.')) return;
-    Store.patch({ 'week': freshWeekAt(nextWeekKey(), week().slotCount) });
+    Store.patch({ 'week': freshWeekAt(nextWeekKey()) });
     toast('Fresh week — plan away 🗓️');
   }
   else if (act === 'gopick'){ document.body.dataset.tab = 'ideas'; }
@@ -1419,8 +1410,7 @@ document.getElementById('ideas').addEventListener('click', function(ev){
     if (!confirm('Delete this idea?')) return;
     var patch = {}; patch['ideas/'+id] = null;
     /* also clear it from any slot */
-    var w = week();
-    for (var i=0;i<w.slotCount;i++){ var s=slot(i); if (s && s.ideaId===id) patch['week/slots/'+i]=null; }
+    for (var i=0;i<MAX_SLOTS;i++){ var s=slot(i); if (s && s.ideaId===id) patch['week/slots/'+i]=null; }
     Store.patch(patch);
   }
 });

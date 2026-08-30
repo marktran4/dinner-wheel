@@ -1,9 +1,9 @@
 # Nomi 🍜
 
 *Nom nom nom.* A tiny web app for Mark + Jenny: dump meal ideas into a shared
-bank, keep a library of the recipes you actually cook from, and plan 2, 3 or 4
-dinners for the week. A combined shopping list builds itself from what's planned, so the
-week is visible before the shop.
+bank, keep a library of the recipes you actually cook from, and plan up to four
+dinners for the week. A combined shopping list builds itself from what's
+planned, so the week is visible before the shop.
 
 **Live app:** https://marktran4.github.io/dinner-wheel/
 
@@ -21,10 +21,10 @@ week is visible before the shop.
 
 - **Ideas tab** — add meal ideas. Tap an idea to edit or delete it, or
   **Promote to recipe** to give it a link and an ingredient list.
-- **This week tab** — pick 2/3/4 dinner slots, then fill each one from your
-  ideas or your recipes. Cook them in whatever order suits; hit **Cooked it**
-  when one's done. A meal with a recipe shows a 📖 chip that opens the recipe
-  in one tap.
+- **This week tab** — fill a slot from your ideas or your recipes and the next
+  one appears, up to four dinners. Cook them in whatever order suits; hit
+  **Cooked it** when one's done. A meal with a recipe shows a 📖 chip that
+  opens the recipe in one tap.
 - **Recipes tab** — the library. Paste a link from RecipeTin Eats, Hot Thai
   Kitchen, Maangchi, My Korean Kitchen, Vicky Pham, Viet World Kitchen or
   Helen's Recipes and it works out the source and suggests a name; add the
