@@ -195,13 +195,38 @@ nav{
   border:1px solid var(--line); border-radius:99px;
   padding:5px;
   box-shadow:0 6px 22px rgba(59,43,27,.18);
+  transition:transform .26s ease, opacity .26s ease;
 }
+/* the centring translateX has to survive, so the slide is composed with it */
+nav.tucked{
+  transform:translateX(-50%) translateY(calc(100% + 22px));
+  opacity:0; pointer-events:none;
+}
+@media (prefers-reduced-motion: reduce){ nav{transition:opacity .15s ease} nav.tucked{transform:translateX(-50%)} }
 nav button{
   display:flex; flex-direction:column; align-items:center; gap:2px;
   font-size:10.5px; font-weight:800; color:var(--muted);
   border-radius:99px; padding:7px 15px; white-space:nowrap;
 }
-nav button .ico{font-size:20px; line-height:1}
+.lineico{
+  width:1.05em; height:1.05em; flex:0 0 auto;
+  fill:none; stroke:currentColor; stroke-width:1.8;
+  stroke-linecap:round; stroke-linejoin:round;
+}
+.pickbtn, .recipechip, .linkbtn, .newweekbtn{display:inline-flex; align-items:center; gap:6px}
+.newweekbtn{justify-content:center}
+.idea .name .lineico{opacity:.55; vertical-align:-.12em}
+
+nav button .ico{
+  width:21px; height:21px; display:block;
+  fill:none; stroke:currentColor; stroke-width:1.7;
+  stroke-linecap:round; stroke-linejoin:round;
+}
+nav button .ico .acc{fill:currentColor; stroke:none; opacity:.35}
+/* the active tab's accent warms up */
+body[data-tab="week"] nav .t-week .acc,
+body[data-tab="recipes"] nav .t-recipes .acc,
+body[data-tab="ideas"] nav .t-ideas .acc{fill:var(--tomato); opacity:1}
 body[data-tab="week"] nav .t-week,
 body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{color:var(--ink); background:#F4E8C2}
 
@@ -252,7 +277,7 @@ body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{col
       <div class="seg" id="slotseg"></div>
     </div>
     <div id="slots"></div>
-    <button class="newweekbtn" data-act="newweek">🧹 Start next week</button>
+    <button class="newweekbtn" data-act="newweek" id="newweekbtn">Start next week</button>
 
     <div class="weekhead">
       <h2>Shopping list <small id="shopcount"></small></h2>
@@ -292,9 +317,30 @@ body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{col
 </main>
 
 <nav>
-  <button class="t-week" data-tab="week"><span class="ico">🍽️</span>This week</button>
-  <button class="t-recipes" data-tab="recipes"><span class="ico">📖</span>Recipes</button>
-  <button class="t-ideas" data-tab="ideas"><span class="ico">💡</span>Ideas</button>
+  <button class="t-week" data-tab="week">
+    <!-- a week, with a dot for each dinner in it -->
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="5.5" width="18" height="15" rx="3.6"/>
+      <path d="M8 3.2v4M16 3.2v4M3 10.6h18"/>
+      <circle class="acc" cx="8" cy="15.4" r="1.5"/>
+      <circle class="acc" cx="12" cy="15.4" r="1.5"/>
+      <circle class="acc" cx="16" cy="15.4" r="1.5"/>
+    </svg>This week</button>
+  <button class="t-recipes" data-tab="recipes">
+    <!-- open book, bookmarked -->
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 8v11.6"/>
+      <path d="M12 8C10.6 6.6 8.6 5.9 5.7 5.9c-.8 0-1.4.6-1.4 1.3v9.5c0 .7.6 1.3 1.4 1.3 2.9 0 4.9.7 6.3 2.1"/>
+      <path d="M12 8c1.4-1.4 3.4-2.1 6.3-2.1.8 0 1.4.6 1.4 1.3v9.5c0 .7-.6 1.3-1.4 1.3-2.9 0-4.9.7-6.3 2.1"/>
+      <path class="acc" d="M14.6 5.9h3.2v5.2l-1.6-1.3-1.6 1.3z"/>
+    </svg>Recipes</button>
+  <button class="t-ideas" data-tab="ideas">
+    <!-- bulb, lit -->
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3.4a6.1 6.1 0 0 0-3.7 10.9c.6.5.9 1.1.9 1.8v.4h5.6v-.4c0-.7.3-1.3.9-1.8A6.1 6.1 0 0 0 12 3.4Z"/>
+      <path d="M9.9 19.1h4.2M10.7 21.2h2.6"/>
+      <circle class="acc" cx="12" cy="9.4" r="2.1"/>
+    </svg>Ideas</button>
 </nav>
 
 <div class="overlay" id="who-overlay">
@@ -345,6 +391,20 @@ var SOURCES = [
   { key:'helen',     label:"Helen's",    full:"Helen's Recipes",    hosts:['helenrecipes.com','youtube.com','youtu.be'] },
   { key:'other',     label:'Other',      full:'Other',              hosts:[] }
 ];
+
+/* Line icons used inside generated markup. The tab bar carries its own copies
+   in the static HTML, where they can be styled per tab. */
+var ICONS = {
+  bulb: '<path d="M12 3.4a6.1 6.1 0 0 0-3.7 10.9c.6.5.9 1.1.9 1.8v.4h5.6v-.4c0-.7.3-1.3.9-1.8A6.1 6.1 0 0 0 12 3.4Z"/>'
+      + '<path d="M9.9 19.1h4.2M10.7 21.2h2.6"/>',
+  book: '<path d="M12 8v11.6"/>'
+      + '<path d="M12 8C10.6 6.6 8.6 5.9 5.7 5.9c-.8 0-1.4.6-1.4 1.3v9.5c0 .7.6 1.3 1.4 1.3 2.9 0 4.9.7 6.3 2.1"/>'
+      + '<path d="M12 8c1.4-1.4 3.4-2.1 6.3-2.1.8 0 1.4.6 1.4 1.3v9.5c0 .7-.6 1.3-1.4 1.3-2.9 0-4.9.7-6.3 2.1"/>',
+  again:'<path d="M20.4 12a8.4 8.4 0 1 1-2.5-6"/><path d="M20.5 4.6v4.1h-4.1"/>'
+};
+function icon(name){
+  return '<svg class="lineico" viewBox="0 0 24 24" aria-hidden="true">'+ICONS[name]+'</svg>';
+}
 
 var EMOJI_MAP = [
   ['bun cha','🍜'],['bun bo','🍜'],['pho','🍜'],['banh mi','🥖'],['banh xeo','🥞'],
@@ -707,7 +767,7 @@ function renderWeek(){
       /* one tap from tonight's dinner to the method on the source site */
       var rc = recipeOfIdea(idea), rcUrl = rc ? safeUrl(rc.url) : '';
       var rchip = rcUrl
-        ? '<a class="recipechip" href="'+esc(rcUrl)+'" target="_blank" rel="noopener">📖 '+esc(sourceMeta(rc.source||'other').label)+' ↗</a>'
+        ? '<a class="recipechip" href="'+esc(rcUrl)+'" target="_blank" rel="noopener">'+icon('book')+esc(sourceMeta(rc.source||'other').label)+' ↗</a>'
         : '';
       html += '<div class="slot" data-i="'+i+'">'
         + '<div class="emoji">'+esc(idea.emoji)+'</div>'
@@ -729,7 +789,7 @@ function renderWeek(){
       html += '<div class="slot empty" data-i="'+i+'">'
         + '<div class="body"><div class="slotlabel">MEAL '+(i+1)+'</div>'
         + '<div class="fill" style="margin-top:6px">'
-        +   '<button class="pickbtn" data-act="gopick">💡 Pick an idea</button>'
+        +   '<button class="pickbtn" data-act="gopick">'+icon('bulb')+'Pick an idea</button>'
         +   '<button class="picklink" data-act="gorecipe">or a recipe</button>'
         + '</div></div></div>';
     }
@@ -837,7 +897,7 @@ function renderIdeas(){
     html += '<div class="idea" data-id="'+e.id+'">'
       + '<div class="idearow">'
       +   '<div class="emoji">'+esc(o.emoji)+'</div>'
-      +   '<div class="body" data-act="toggle"><div class="name">'+(rec?'📖 ':'')+esc(o.name)+'</div><div class="meta">'+meta+'</div></div>'
+      +   '<div class="body" data-act="toggle"><div class="name">'+(rec?icon('book')+' ':'')+esc(o.name)+'</div><div class="meta">'+meta+'</div></div>'
       +   '<div class="ideaacts">'
       +     (inWeek
               ? '<button class="planbtn" disabled>planned</button>'
@@ -850,8 +910,8 @@ function renderIdeas(){
       +   (rec
             ? '<div class="fieldlab">INGREDIENTS — FROM THE RECIPE</div>'
               + '<div class="inglist'+(rec.ings?'':' none')+'">'+esc(rec.ings || 'None listed yet')+'</div>'
-              + '<div class="linkline"><button class="linkbtn" data-act="viewrecipe">📖 Edit in recipe →</button></div>'
-            : '<div class="linkline"><button class="linkbtn" data-act="promote">📖 Promote to recipe</button></div>')
+              + '<div class="linkline"><button class="linkbtn" data-act="viewrecipe">'+icon('book')+'Edit in recipe →</button></div>'
+            : '<div class="linkline"><button class="linkbtn" data-act="promote">'+icon('book')+'Promote to recipe</button></div>')
       +   '<div class="editrow"><button class="delbtn" data-act="del">Delete</button>'
       +   '<button class="savebtn" data-act="save">Save</button></div>'
       + '</div></div>';
@@ -1327,8 +1387,42 @@ document.addEventListener('visibilitychange', function(){
   if (!document.hidden) rolloverIfNeeded();
 });
 
+/* ---------- tuck the tab bar away while scrolling down ---------- */
+(function(){
+  var navEl = document.querySelector('nav');
+  var lastY = window.scrollY || 0, queued = false;
+  var DEADZONE = 6;    // ignore the jitter of a finger resting on the screen
+  var TOP = 60;        // near the top it always shows, whichever way you moved
+
+  function update(){
+    var y = window.scrollY || document.documentElement.scrollTop || 0;
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    if (y <= TOP || y >= max - 4){
+      navEl.classList.remove('tucked');           // top of the page, or the end of it
+    } else if (y > lastY + DEADZONE){
+      navEl.classList.add('tucked');              // heading down — get out of the way
+    } else if (y < lastY - DEADZONE){
+      navEl.classList.remove('tucked');           // heading back up — come back
+    }
+    if (Math.abs(y - lastY) > DEADZONE) lastY = y;
+  }
+
+  window.addEventListener('scroll', function(){
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function(){ update(); queued = false; });
+  }, { passive:true });
+
+  /* a shorter tab can leave us scrolled past its end with the bar hidden */
+  document.querySelector('nav').addEventListener('click', function(){
+    navEl.classList.remove('tucked');
+    lastY = window.scrollY || 0;
+  });
+})();
+
 /* ---------- boot ---------- */
 function boot(){
+  document.getElementById('newweekbtn').insertAdjacentHTML('afterbegin', icon('again'));
   if ('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(function(){});
   }
