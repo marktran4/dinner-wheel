@@ -86,7 +86,7 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
 .daychip{
   background:#F4E8C2; border-radius:7px; padding:2px 8px; font-weight:800; font-size:11px; color:var(--ink)
 }
-.slot .actions{display:flex; flex-direction:column; gap:6px; align-items:flex-end}
+.slot .actions{display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex:0 0 auto; max-width:116px}
 .cookbtn{background:var(--basil); color:#fff; font-weight:800; font-size:12px; border-radius:9px; padding:7px 10px}
 .cookbtn.done{background:transparent; color:var(--basil); padding:4px 0}
 .rmbtn{color:var(--muted); font-size:12px; font-weight:700}
@@ -794,7 +794,7 @@ function renderWeek(){
         + '</div>'
         + '<div class="actions">'
         +   (s.cooked
-              ? '<button class="cookbtn done" data-act="uncook" data-i="'+i+'">Cooked 🎉 (tap to undo)</button>'
+              ? '<button class="cookbtn done" data-act="uncook" data-i="'+i+'" title="Tap to undo">Cooked 🎉</button>'
               : '<button class="cookbtn" data-act="cook" data-i="'+i+'">Cooked it ✓</button>')
         +   '<button class="rmbtn" data-act="remove" data-i="'+i+'">swap out</button>'
         + '</div></div>';
