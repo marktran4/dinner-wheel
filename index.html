@@ -399,7 +399,15 @@ var EFFORTS = ['quick','standard','involved'];
 var EFFORT_ICON = { quick:'🟢', standard:'🟡', involved:'🔴' };
 var EFFORT_MIGRATE = { normal:'standard', fancy:'involved' };  // old labels -> renamed tiers
 var CONFETTI = ['#E14B32','#F0A62B','#2E7D46','#3E6FB0','#8A4E85','#B85C38'];
-var NAMES = { mark:'Mark', jenny:'Jenny', wheel:'Nomi' };
+var NAMES = { mark:'Mark', jenny:'Jenny' };
+
+/* Only a real person earns a byline. The six seeded meals, and anything added
+   before a phone knew whose it was, are stored as 'wheel' — nobody's idea, so
+   nobody's name. */
+function byline(who){
+  if (!who || who === 'wheel') return '';
+  return '<span class="byline '+esc(who)+'">'+esc(NAMES[who] || who)+'</span>';
+}
 
 /* Recipe sources we actually cook from. `key` is what gets stored on a recipe
    (never recomputed), `hosts` only seeds the guess when a link is pasted — the
@@ -836,9 +844,7 @@ function renderWeek(){
         + '<div class="body">'
         +   '<div class="slotlabel">MEAL '+(i+1)+'</div>'
         +   '<div class="name">'+esc(idea.name)+'</div>'
-        +   '<div class="meta">'
-        +   '<span class="byline '+esc(idea.by||'wheel')+'">'+esc(NAMES[idea.by]||idea.by||'Nomi')+'</span>'
-        +   '</div>'
+        +   (byline(idea.by) ? '<div class="meta">'+byline(idea.by)+'</div>' : '')
         +   (rchip ? '<div class="metalink">'+rchip+'</div>' : '')
         + '</div>'
         + '<div class="actions">'
@@ -951,9 +957,11 @@ function renderIdeas(){
   var html = '';
   shown.forEach(function(e){
     var o = e.idea;
-    var by = o.by||'wheel';
-    var meta = '<span class="byline '+esc(by)+'">'+esc(NAMES[by]||by)+'</span> · '+EFFORT_ICON[o.effort||'standard']
-      + ' · ' + (o.cooked ? 'cooked '+o.cooked+'× · '+agoLabel(o.last) : 'never cooked');
+    var meta = [
+      byline(o.by),
+      EFFORT_ICON[o.effort||'standard'],
+      o.cooked ? 'cooked '+o.cooked+'× · '+agoLabel(o.last) : 'never cooked'
+    ].filter(Boolean).join(' · ');
     var inWeek = planned[e.id];
     var rec = recipeOfIdea(o);
     html += '<div class="idea" data-id="'+e.id+'">'
@@ -1071,10 +1079,11 @@ function renderRecipes(){
     var url = safeUrl(r.url);
     var iid = ideaIdForRecipe(e.id);
     var nIngs = (r.ings||'').split('\n').filter(function(l){ return l.trim(); }).length;
-    var by = r.by||'wheel';
-    var meta = esc(sm.full)
-      + ' · ' + (nIngs ? nIngs+' ingredient'+(nIngs>1?'s':'') : 'no ingredients yet')
-      + ' · <span class="byline '+esc(by)+'">'+esc(NAMES[by]||by)+'</span>';
+    var meta = [
+      esc(sm.full),
+      nIngs ? nIngs+' ingredient'+(nIngs>1?'s':'') : 'no ingredients yet',
+      byline(r.by)
+    ].filter(Boolean).join(' · ');
     var inWeek = iid && planned[iid];
     var opts = '';
     SOURCES.forEach(function(src){
