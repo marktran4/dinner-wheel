@@ -3,8 +3,8 @@
 A tiny web app for Mark + Jenny: dump meal ideas into a shared bank, pick how many
 dinners to plan this week (2, 3 or 4), then spin the wheel to decide. The spin
 **locks in** the meal — each person gets one veto per week, that's the game.
-A running tally of meals cooked this month and a combined shopping list so the
-week is visible before the shop.
+A library of the recipes you actually cook from and a combined shopping list so
+the week is visible before the shop.
 
 **Live app:** https://marktran4.github.io/dinner-wheel/
 
@@ -16,16 +16,20 @@ week is visible before the shop.
 
 ## How to play
 
-- **Ideas tab** — add meal ideas. Optionally list ingredients so the
-  shop list builds itself. Tap an idea to edit or delete it.
+- **Ideas tab** — add meal ideas. Tap an idea to edit or delete it, or
+  **Promote to recipe** to give it a link and an ingredient list.
 - **This week tab** — pick 2/3/4 dinner slots. Fill a slot by spinning or picking.
-  Tap the day chip to assign a day. Hit **Cooked it** when it's done — that bumps
-  the monthly tally at the top.
+  Tap the day chip to assign a day. Hit **Cooked it** when it's done. A meal with
+  a recipe shows a 📖 chip that opens the recipe in one tap.
 - **Wheel tab** — spin to fill the next empty slot. The result locks in unless
   you spend your one weekly veto. Meals cooked in the last 2 weeks sit out
   unless you turn on "include recent".
-- The tally at the top counts every meal cooked this month and resets on the 1st.
-  Weeks roll over automatically every Monday.
+- **Recipes tab** — the library. Paste a link from RecipeTin Eats, Hot Thai
+  Kitchen, Maangchi, My Korean Kitchen, Vicky Pham, Viet World Kitchen or
+  Helen's Recipes and it works out the source and suggests a name; add the
+  ingredients and they flow onto the shopping list whenever that meal is
+  planned. Filter by source, search by name, **+ this week** to plan it.
+- Weeks roll over automatically every Monday.
 
 ## Turning on shared sync (one-time, ~10 minutes)
 
@@ -68,8 +72,7 @@ Notes:
   the link/on the phones).
 - If phones were used in single-phone mode first: the first phone to connect
   seeds the shared database with everything it has; phones joining later keep
-  the shared data plus their own meal ideas (idea banks are merged). The monthly
-  tally follows the shared data when a later phone joins.
+  the shared data plus their own meal ideas (idea banks are merged).
 
 ## Dev notes
 
