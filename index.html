@@ -1436,8 +1436,11 @@ document.getElementById('keysave').addEventListener('click', function(){
   location.reload();
 });
 
+var swReg = null;
 document.addEventListener('visibilitychange', function(){
-  if (!document.hidden) rolloverIfNeeded();
+  if (document.hidden) return;
+  rolloverIfNeeded();
+  if (swReg) swReg.update().catch(function(){});   // catch deploys on reopen
 });
 
 /* ---------- tuck the tab bar away while scrolling down ---------- */
@@ -1477,7 +1480,19 @@ document.addEventListener('visibilitychange', function(){
 function boot(){
   document.getElementById('newweekbtn').insertAdjacentHTML('afterbegin', icon('again'));
   if ('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      swReg = reg;
+      reg.update().catch(function(){});
+    }).catch(function(){});
+    /* A new worker taking over means the shell it serves is newer than the page
+       we're looking at. Reload once so the update is actually on screen, rather
+       than waiting for the next cold start. */
+    var refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if (refreshing) return;
+      refreshing = true;
+      location.reload();
+    });
   }
   var ready;
   if (window.FIREBASE_CONFIG){
