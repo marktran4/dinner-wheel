@@ -10,8 +10,8 @@
 
 A fourth tab — **Recipes 📖** — that holds the household's trusted recipes.
 Recipes are primarily *references*: a link to the original recipe on one of
-the sources Mark + Jenny actually cook from, plus a structured ingredient
-list so the shopping list can build itself with real quantities.
+the sources Mark + Jenny actually cook from, plus an ingredient list so a
+planned recipe still fills the shopping list the way ideas do today.
 
 The trusted sources:
 
@@ -25,19 +25,19 @@ The trusted sources:
 | Viet World Kitchen | `vietworldkitchen.com` | Vietnamese |
 | Helen's Recipes | `helenrecipes.com`, YouTube links | Vietnamese |
 
-Three headline outcomes:
+Two headline outcomes:
 
 1. **A Recipes tab** — browse/search the library, filter by source, add
    recipes by hand or by pasting a URL.
 2. **One tap from This Week to the recipe** — when a planned meal has a
    linked recipe, its slot card on the home (This Week) view shows a 📖
    button that opens the source page directly.
-3. **A smarter shopping list** — recipe ingredients carry quantities, and
-   the same ingredient across multiple planned meals merges
-   (2 onions + 1 onion = 3 onions).
 
 ### Non-goals (v1)
 
+- **No changes to the shopping list.** It keeps its current behavior
+  exactly: grouped per meal, fed from `idea.ings`, same tick keys. Recipes
+  feed it through the existing mechanism (§5) rather than replacing it.
 - No scraping/importing of ingredient lists from recipe pages (the app is a
   static GitHub Pages site — no server, and recipe sites don't send CORS
   headers; see §6).
@@ -64,8 +64,8 @@ recipe  ──(idea.recipeId)──  idea  ──(slot.ideaId)──  week slot
   idea, so every recipe is instantly spinnable/plannable.
 - An idea without a recipe keeps working exactly as today (free-text `ings`,
   no 📖 button). Nothing is migrated destructively.
-- When an idea has a `recipeId`, the recipe's structured ingredients
-  **replace** the idea's free-text `ings` as the shop-list source.
+- The shop list keeps reading `idea.ings` and knows nothing about recipes —
+  see §5 for how a recipe's ingredients get there.
 
 Why a separate record instead of extra fields on the idea: the Ideas tab
 stays a lightweight brainstorm bank ("we should do tacos sometime"), while
@@ -86,7 +86,7 @@ same `mealwheel/$house` path, no rules change needed):
     "emoji":  "🍜",                    // via existing pickEmoji(), editable
     "url":    "https://www.recipetineats.com/bun-cha-vietnamese-meatballs/",
     "source": "recipetin",             // registry key, derived from url host; "other" if unknown
-    "serves": 4,                       // optional, display only in v1
+    "serves": 4,                       // optional, display only
     "ings":   "500 g pork mince\n2 tbsp fish sauce\n1 onion\nvermicelli noodles",
     "notes":  "double the nuoc cham",  // optional free text
     "by":     "mark",
@@ -105,11 +105,9 @@ Change to ideas — one optional field:
 
 Design notes:
 
-- **`ings` stays a newline-separated string**, same as ideas today — same
-  editing UI, same Firebase-friendly shape. Structure comes from *parsing*
-  each line at shop-list build time (§5), not from a nested array. This
-  keeps hand entry frictionless and makes old free-text lines and new
-  quantity lines the same data type.
+- **`ings` is a newline-separated string**, byte-for-byte the same shape as
+  `idea.ings` today. That's deliberate: mirroring it onto the linked idea
+  (§5) is a plain copy, and the shop list needs zero changes.
 - **`source` is stored, not recomputed**, so renaming/moving a URL later
   doesn't reshuffle the library. It's derived once from the URL host at
   save time via a `SOURCES` registry constant (key, label, host patterns,
@@ -118,8 +116,8 @@ Design notes:
 - Safe getter `recipes()` follows the existing pattern (`ideas()`,
   `shop()` etc.) since Firebase drops empty nodes.
 - Deleting a recipe clears `recipeId` on any idea pointing at it (same
-  "drop deleted ideas" defensiveness as `shortlistIds()`); deleting an idea
-  leaves the recipe in the library.
+  "drop deleted ideas" defensiveness as `shortlistIds()`) and leaves that
+  idea's `ings` in place; deleting an idea leaves the recipe in the library.
 
 ---
 
@@ -164,7 +162,7 @@ A single add card with two inputs:
 ┌ Add a recipe ────────────────────────────────┐
 │ [ Paste a link (optional)…                 ] │
 │ [ Recipe name…                             ] │
-│ [ Ingredients — one per line, "500 g pork" ] │
+│ [ Ingredients — one per line               ] │
 │                                    [ Add ]   │
 └──────────────────────────────────────────────┘
 ```
@@ -180,11 +178,13 @@ A single add card with two inputs:
 - **On Add:**
   1. Create the recipe record.
   2. Create a linked idea (`name`, `emoji`, default effort `standard`,
-     `recipeId`) — **unless** an existing idea has the same normalized
-     name, in which case link that idea instead (sets its `recipeId`) and
-     toast "Linked to your existing idea ✓".
+     `recipeId`, `ings` copied from the recipe) — **unless** an existing
+     idea has the same normalized name, in which case link that idea
+     instead (sets its `recipeId`, mirrors `ings`) and toast "Linked to
+     your existing idea ✓".
 - Ingredients may be empty at add time; a recipe with no ingredients simply
-  contributes nothing to the shop list yet.
+  contributes nothing to the shop list, exactly like an idea with no
+  ingredients today.
 
 ### 4.3 This Week (home) integration
 
@@ -201,82 +201,51 @@ MEAL 2   Bun Cha
 - The chip label is the source's short name (from the registry), so you
   can see at a glance *where* the recipe lives.
 - Ideas without recipes render exactly as today — no chip, no empty state.
+- The shopping list below the slots is untouched, in code and on screen.
 
 ### 4.4 Ideas tab tie-in (small)
 
-- An idea linked to a recipe shows `📖` next to its name and its edit panel
-  offers "View recipe" (jumps to the Recipes tab with that card open)
-  instead of the free-text ingredients textarea (ingredients now live on
-  the recipe — one source of truth).
-- An unlinked idea's edit panel gains one small action: **"Promote to
-  recipe"** — creates a recipe pre-filled from the idea (name, emoji,
-  ings copied over) and links it. This is the upgrade path for the
-  existing bank.
+- An idea linked to a recipe shows `📖` next to its name. Its edit panel
+  shows the ingredients **read-only** with a "Edit in recipe →" link
+  (jumps to the Recipes tab with that card open), so ingredients have one
+  editing home and can't drift out of sync with the recipe.
+- An unlinked idea's edit panel is unchanged, plus one small action:
+  **"Promote to recipe"** — creates a recipe pre-filled from the idea
+  (name, emoji, `ings` copied over) and links it. This is the upgrade path
+  for the existing bank.
 
 ---
 
-## 5. Shopping list with quantities
+## 5. How recipes reach the shopping list
 
-### 5.1 Ingredient line grammar
+**The shopping list does not change.** It still walks this week's slots,
+reads `idea.ings`, groups by meal, and keys ticks as `ideaId_lineIndex`.
+No new parsing, no merging, no quantity math.
 
-Each `ings` line is parsed with a lenient grammar:
+Recipes reach it by **mirroring**: whenever a recipe's `ings` is saved
+(on add, and on every edit), the same string is written to its linked
+idea's `ings` in the same `Store.patch` call:
 
+```js
+Store.patch({
+  'recipes/<recipeId>/ings': text,
+  'ideas/<ideaId>/ings':     text     // same patch, so they can't diverge
+});
 ```
-line     := [qty] [unit] name
-qty      := number | fraction | mixed     e.g. 2, 0.5, 1/2, 1 1/2
-unit     := one of UNITS registry         g, kg, ml, l, tbsp, tsp, cup(s),
-                                          can(s), bunch(es), clove(s), …
-name     := the rest of the line
-```
 
-Examples:
+Consequences, all intentional:
 
-| Line | qty | unit | name |
-|---|---|---|---|
-| `500 g pork mince` | 500 | g | pork mince |
-| `2 onions` | 2 | — | onion *(singularized)* |
-| `1/2 cup fish sauce` | 0.5 | cup | fish sauce |
-| `vermicelli noodles` | — | — | vermicelli noodles |
-| `salt and pepper` | — | — | salt and pepper |
-
-**A line that doesn't parse is not an error** — it's an unquantified item,
-exactly like every existing free-text line. This is what makes the old idea
-bank and the new recipes coexist on one list.
-
-### 5.2 Merge rules
-
-The shop list becomes **one combined list** (replacing the per-meal
-groups), built from every planned meal's ingredients + extras:
-
-- **Merge key:** normalized name (lowercase, trimmed, naive singular —
-  strip trailing `s`/`es` with a small irregulars list) **plus unit
-  family**. `g` and `kg` merge (normalized to g, displayed back as kg past
-  1000); `tbsp`/`tsp`/`cup` don't cross-merge — no density math.
-- **Both quantified, same unit family** → sum: `2 onion` + `1 onion` →
-  **`3 onions`**; `500 g pork mince` + `250 g pork mince` → **`750 g pork
-  mince`**.
-- **Mixed or unmergeable** (one line has qty, the other doesn't; units
-  clash) → keep as separate lines. Never guess.
-- **Attribution:** each merged line shows tiny meal emojis of its
-  contributors (`3 onions 🍜🍛`), so "why is this here" stays answerable.
-  Tapping the line could expand per-meal amounts — nice-to-have, not v1.
-- **Extras** (`milk, bread…`) keep their own section and behavior,
-  untouched.
-
-### 5.3 Ticks
-
-Today's tick keys are `ideaId_lineIndex`, chosen so ticks survive slot
-swaps. Merged lines need a new key: **`m_<normalizedName>|<unitFamily>`**.
-
-- Ticks still survive slot swaps *and* now survive re-ordering of
-  ingredient lines within a recipe.
-- Edge accepted: if a merged line's quantity grows because a new meal is
-  planned *after* you shopped (you ticked "3 onions", it becomes
-  "5 onions"), the tick **clears** so you notice you need more. (Compare
-  stored qty-at-tick vs current; store `{done:true, qty:3}` instead of
-  `true`.)
-- `shop` node shape stays a flat map; old `ideaId_li` keys are simply
-  orphaned and cleaned by the existing "Clear list" / week rollover paths.
+- The shop list code stays exactly as it is — the lowest-risk option, and
+  it means an old phone still on the previous build builds an identical
+  list.
+- Ingredients are edited in **one place** (the recipe) whenever a link
+  exists — §4.4 makes the idea's copy read-only, so the mirror is always
+  one-directional and there's no merge conflict to resolve.
+- Unlinked ideas keep their own free-text ingredients, untouched.
+- Quantity merging across meals (`2 onions + 1 onion = 3 onions`) is
+  explicitly out of scope. If it's ever wanted, it's a self-contained
+  change to the shop-list renderer and doesn't touch this design — the
+  ingredient text is already sitting where it would need it.
 
 ---
 
@@ -295,53 +264,54 @@ swaps. Merged lines need a new key: **`m_<normalizedName>|<unitFamily>`**.
   hundreds of recipes are negligible against the existing state. No rules
   or schema-version changes needed — old app versions ignore the `recipes`
   node and the `recipeId` field entirely, so a phone on the old build
-  won't break sync (it just won't show the tab).
+  won't break sync (it just won't show the tab, and thanks to the mirror
+  in §5 its shopping list is still correct).
 
 ---
 
 ## 7. Implementation plan
 
 All in `index.html`, following existing patterns (string-built render
-functions, `Store.patch` writes, event delegation).
+functions, `Store.patch` writes, event delegation). The shop-list renderer
+is not modified in any phase.
 
-**Phase 1 — library + week link (the core ask)**
-1. `SOURCES` + `UNITS` registries; `recipes()` getter; recipe CRUD via
-   `Store.patch`.
+**Phase 1 — the library**
+1. `SOURCES` registry; `recipes()` getter; recipe CRUD via `Store.patch`.
 2. Recipes tab: nav button, view, add card with URL detection + slug name
    guess, source chips, search, cards with Open/Plan/edit.
-3. Idea linking: auto-create/link idea on recipe add; "Promote to recipe";
-   📖 chip on This Week slot cards.
 
-**Phase 2 — quantified shop list**
-4. Line parser + normalizer (pure functions — keep them dependency-free
-   and unit-testable in console).
-5. Merged list render, new tick keys, qty-at-tick invalidation.
+**Phase 2 — linking**
+3. Auto-create/link idea on recipe add, with `ings` mirroring (§5).
+4. 📖 chip on This Week slot cards.
+5. Ideas tab: 📖 marker, read-only ingredients + "Edit in recipe →",
+   "Promote to recipe".
 
 **Phase 3 — polish (optional)**
-6. Per-meal breakdown on tap of a merged line; serves scaling
-   (multiply quantities when a slot is marked "cooking for 6"); Helen's
-   Recipes YouTube thumbnails via `img.youtube.com` (no CORS issue for
-   images).
+6. Serves display; Helen's Recipes YouTube thumbnails via
+   `img.youtube.com` (no CORS issue for images); recently-cooked sort on
+   the library.
 
 **Testing checklist**
 - Old state (ideas with free-text ings, no `recipes` node) renders
-  unchanged; shop list identical until a recipe is planned.
+  unchanged; **shopping list output is byte-identical before and after the
+  feature ships** for any week with no recipes planned.
+- Editing a recipe's ingredients updates the planned meal's shop-list
+  lines, and existing ticks behave the same as editing an idea's
+  ingredients does today.
 - Recipe add on phone A appears on phone B (cloud mode) and survives
   refresh (local mode).
-- Deleting a recipe un-links its idea without deleting it; deleting an
-  idea keeps the recipe.
-- Merge math: `2 onions` + `1 onion`, `500 g` + `1 kg`, qty + no-qty,
-  `tbsp` vs `cup` all behave per §5.2.
-- Week rollover and veto flows untouched.
+- Deleting a recipe un-links its idea without deleting it or wiping its
+  ingredients; deleting an idea keeps the recipe.
+- Week rollover, veto, tally, and wheel flows untouched.
 
 ---
 
 ## 8. Open questions for Mark + Jenny
 
-1. Shop list: fully replace the per-meal grouping with the merged list, or
-   keep a toggle between "by meal" and "combined"? *(Spec assumes replace;
-   a toggle is cheap if the per-meal view is missed.)*
-2. Should "Plan it" from a recipe card jump you to the This Week tab, or
+1. Should "Plan it" from a recipe card jump you to the This Week tab, or
    stay put with a toast? *(Ideas tab currently stays put — spec follows.)*
-3. Helen's Recipes is YouTube-first — is a plain link enough, or do you
+2. Helen's Recipes is YouTube-first — is a plain link enough, or do you
    want the video thumbnail on the card (Phase 3)?
+3. When a recipe is linked, ingredients become read-only on the idea
+   (§4.4). Any case where you'd want to tweak the shop-list version for a
+   week without editing the recipe itself?
