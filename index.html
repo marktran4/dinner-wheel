@@ -82,9 +82,9 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
   .slot .emoji{font-size:25px; width:28px}
   .cookbtn{font-size:11.5px; padding:7px 9px}
   .slot .meta{gap:7px}
-}
-.daychip{
-  background:#F4E8C2; border-radius:7px; padding:2px 8px; font-weight:800; font-size:11px; color:var(--ink)
+  /* no room for the word on a 320px screen — the dot still says it, and it
+     keeps its tooltip */
+  .slot .effw{display:none}
 }
 .slot .actions{display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex:0 0 auto; max-width:116px}
 .cookbtn{background:var(--basil); color:#fff; font-weight:800; font-size:12px; border-radius:9px; padding:7px 10px}
@@ -386,7 +386,6 @@ var EFFORTS = ['quick','standard','involved'];
 var EFFORT_ICON = { quick:'🟢', standard:'🟡', involved:'🔴' };
 var EFFORT_MIGRATE = { normal:'standard', fancy:'involved' };  // old labels -> renamed tiers
 var CONFETTI = ['#E14B32','#F0A62B','#2E7D46','#3E6FB0','#8A4E85','#B85C38'];
-var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 var NAMES = { mark:'Mark', jenny:'Jenny', wheel:'Nomi' };
 
 /* Recipe sources we actually cook from. `key` is what gets stored on a recipe
@@ -775,7 +774,6 @@ function renderWeek(){
     var s = slot(i);
     var idea = s && s.ideaId ? ideas()[s.ideaId] : null;
     if (idea){
-      var day = s.day ? s.day : 'any day';
       /* one tap from tonight's dinner to the method on the source site */
       var rc = recipeOfIdea(idea), rcUrl = rc ? safeUrl(rc.url) : '';
       var rchip = rcUrl
@@ -786,8 +784,9 @@ function renderWeek(){
         + '<div class="body">'
         +   '<div class="slotlabel">MEAL '+(i+1)+'</div>'
         +   '<div class="name">'+esc(idea.name)+'</div>'
-        +   '<div class="meta"><button class="daychip" data-act="day" data-i="'+i+'">'+esc(day)+'</button>'
-        +   '<span title="'+esc(idea.effort||'standard')+'">'+EFFORT_ICON[idea.effort||'standard']+'</span>'
+        +   '<div class="meta">'
+        +   '<span title="'+esc(idea.effort||'standard')+'">'+EFFORT_ICON[idea.effort||'standard']
+        +     ' <span class="effw">'+esc(idea.effort||'standard')+'</span></span>'
         +   '<span class="byline '+esc(idea.by||'wheel')+'">'+esc(NAMES[idea.by]||idea.by||'Nomi')+'</span>'
         +   '</div>'
         +   (rchip ? '<div class="metalink">'+rchip+'</div>' : '')
@@ -1155,12 +1154,6 @@ document.getElementById('view-week').addEventListener('click', function(ev){
   }
   else if (act === 'gopick'){ document.body.dataset.tab = 'ideas'; }
   else if (act === 'gorecipe'){ document.body.dataset.tab = 'recipes'; }
-  else if (act === 'day'){
-    var s = slot(i); if (!s) return;
-    var cur = s.day ? DAYS.indexOf(s.day) : -1;
-    var next = cur+1 >= DAYS.length ? null : DAYS[cur+1];
-    Store.patch({ ['week/slots/'+i+'/day']: next });
-  }
   else if (act === 'cook'){
     var s2 = slot(i); if (!s2 || !s2.ideaId || s2.cooked) return;
     var idea = ideas()[s2.ideaId];

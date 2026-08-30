@@ -22,8 +22,8 @@ week is visible before the shop.
 - **Ideas tab** — add meal ideas. Tap an idea to edit or delete it, or
   **Promote to recipe** to give it a link and an ingredient list.
 - **This week tab** — pick 2/3/4 dinner slots, then fill each one from your
-  ideas or your recipes. Tap the day chip to assign a day. Hit **Cooked it**
-  when it's done. A meal with a recipe shows a 📖 chip that opens the recipe
+  ideas or your recipes. Cook them in whatever order suits; hit **Cooked it**
+  when one's done. A meal with a recipe shows a 📖 chip that opens the recipe
   in one tap.
 - **Recipes tab** — the library. Paste a link from RecipeTin Eats, Hot Thai
   Kitchen, Maangchi, My Korean Kitchen, Vicky Pham, Viet World Kitchen or
