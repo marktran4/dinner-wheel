@@ -1,7 +1,7 @@
 {
-  "name": "Dinner Wheel",
-  "short_name": "Dinner",
-  "description": "Spin the wheel, plan the week, dinner sorted.",
+  "name": "Nomi",
+  "short_name": "Nomi",
+  "description": "Plan the week's dinners, keep the recipes, shop once.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

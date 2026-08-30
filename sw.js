@@ -1,5 +1,5 @@
-/* Dinner Wheel service worker — offline shell so the plan opens in the supermarket */
-var VERSION = 'dw-v7';
+/* Nomi service worker — offline shell so the plan opens in the supermarket */
+var VERSION = 'dw-v8';
 var ASSETS = ['./', 'index.html', 'manifest.webmanifest', 'firebase-config.js', 'icon-180.png', 'icon-512.png'];
 
 self.addEventListener('install', function (e) {
