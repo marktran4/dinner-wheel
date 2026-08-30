@@ -617,6 +617,24 @@ function esc(s){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
   });
 }
+/* Words that stay lowercase inside a name — never at either end of it. */
+var MINOR_WORDS = ['a','an','and','as','at','but','by','for','from','in','into','n','nor',
+  'of','on','onto','or','over','per','the','to','v','via','vs','w','w/','with','without'];
+
+function titleCaseName(name){
+  var words = String(name==null?'':name).trim().replace(/\s+/g,' ').split(' ');
+  var last = words.length - 1;
+  return words.map(function(word, i){
+    if (!word) return word;
+    if (/^[A-Z0-9&/.'-]{1,4}$/.test(word)) return word;   // BBQ, BLT, PB&J — leave acronyms be
+    if (/[A-Z]/.test(word.slice(1))) return word;         // McMuffin, GF — already deliberate
+    var lower = word.toLowerCase();
+    if (i !== 0 && i !== last && MINOR_WORDS.indexOf(lower.replace(/[.,;:]+$/,'')) !== -1) return lower;
+    /* first letter only, so stir-fry and shepherd's keep their shape */
+    return lower.replace(/[a-z]/, function(c){ return c.toUpperCase(); });
+  }).join(' ');
+}
+
 function pickEmoji(name){
   var n = name.toLowerCase();
   for (var i=0;i<EMOJI_MAP.length;i++){ if (n.indexOf(EMOJI_MAP[i][0]) !== -1) return EMOJI_MAP[i][1]; }
@@ -746,10 +764,32 @@ function migrateEfforts(){
   if (changed) Store.patch(patch);
 }
 
+/* Names typed before the app started standardising them. Runs on render like
+   the effort migration; once through, it finds nothing to do. */
+function migrateNames(){
+  if (!state) return;
+  var patch = {}, changed = false;
+  ['ideas','recipes'].forEach(function(node){
+    var coll = state[node] || {};
+    Object.keys(coll).forEach(function(id){
+      var o = coll[id];
+      if (!o || !o.name) return;
+      var tidy = titleCaseName(o.name);
+      if (tidy !== o.name){
+        o.name = tidy;                       // this render already shows the fix
+        patch[node+'/'+id+'/name'] = tidy;
+        changed = true;
+      }
+    });
+  });
+  if (changed) Store.patch(patch);
+}
+
 /* ---------- render ---------- */
 function render(){
   if (!state) return;
   migrateEfforts();
+  migrateNames();
   renderWeek(); renderRecipes(); renderIdeas();
 }
 
@@ -945,7 +985,7 @@ function renderIdeas(){
 
 function addIdea(){
   var nameEl = document.getElementById('newname');
-  var name = nameEl.value.trim();
+  var name = titleCaseName(nameEl.value);
   if (!name){ nameEl.focus(); return; }
   var effort = newEffort;
   var id = uid();
@@ -1094,7 +1134,7 @@ function addRecipe(){
   var raw = urlEl.value.trim();
   var url = safeUrl(raw);
   if (raw && !url){ toast('Links need to start with http:// or https://'); urlEl.focus(); return; }
-  var name = (nameEl.value.trim() || slugName(url)).slice(0,40);
+  var name = titleCaseName((nameEl.value.trim() || slugName(url)).slice(0,40));
   if (!name){ nameEl.focus(); toast('Give it a name'); return; }
 
   var dupe = findRecipeByName(name);
@@ -1269,7 +1309,7 @@ document.getElementById('recipes').addEventListener('click', function(ev){
     lockIn(iid, idx);
   }
   else if (act === 'rsave'){
-    var name = card.querySelector('.e-name').value.trim().slice(0,40);
+    var name = titleCaseName(card.querySelector('.e-name').value.slice(0,40));
     if (!name){ toast('Name can\'t be empty'); return; }
     var rawUrl = card.querySelector('.e-url').value.trim();
     var url = safeUrl(rawUrl);
@@ -1329,7 +1369,7 @@ document.getElementById('ideas').addEventListener('click', function(ev){
     lockIn(id, idx);
   }
   else if (act === 'save'){
-    var name = card.querySelector('.e-name').value.trim();
+    var name = titleCaseName(card.querySelector('.e-name').value);
     if (!name) return;
     var patch = { ['ideas/'+id+'/name']: name, ['ideas/'+id+'/emoji']: pickEmoji(name) };
     var rec = recipeOfIdea(ideas()[id]);
