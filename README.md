@@ -1,11 +1,15 @@
-# Dinner Wheel 🎡
+# Nomi 🍜
 
-A tiny web app for Mark + Jenny: dump meal ideas into a shared bank, keep a
-library of the recipes you actually cook from, and plan 2, 3 or 4 dinners for
-the week. A combined shopping list builds itself from what's planned, so the
+*Nom nom nom.* A tiny web app for Mark + Jenny: dump meal ideas into a shared
+bank, keep a library of the recipes you actually cook from, and plan 2, 3 or 4
+dinners for the week. A combined shopping list builds itself from what's planned, so the
 week is visible before the shop.
 
 **Live app:** https://marktran4.github.io/dinner-wheel/
+
+> The repo, the URL, the Firebase project and the saved data all still use the
+> old `dinner-wheel` / `mealwheel` names. Renaming any of them would break the
+> bookmark on your phones or orphan the data, so only what you see changed.
 
 ## Put it on your phone
 
