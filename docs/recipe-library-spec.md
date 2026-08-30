@@ -241,7 +241,12 @@ Consequences, all intentional:
 - Ingredients are edited in **one place** (the recipe) whenever a link
   exists — §4.4 makes the idea's copy read-only, so the mirror is always
   one-directional and there's no merge conflict to resolve.
-- Unlinked ideas keep their own free-text ingredients, untouched.
+- Unlinked ideas keep their own free-text ingredients, untouched. Worth
+  knowing: before this feature nothing in the UI ever *wrote* `idea.ings` —
+  the shop-list code that reads it has been dormant since the ingredients
+  field lost its editor, so in practice the list could only ever show
+  manually-added extras. The Recipes tab is the first thing that fills it,
+  which is why the mirror matters more than it looks.
 - Quantity merging across meals (`2 onions + 1 onion = 3 onions`) is
   explicitly out of scope. If it's ever wanted, it's a self-contained
   change to the shop-list renderer and doesn't touch this design — the
