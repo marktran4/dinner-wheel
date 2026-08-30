@@ -41,7 +41,6 @@ header{
 .brand{display:flex; align-items:baseline; justify-content:space-between}
 .brand h1{margin:0; font-size:24px; font-weight:900; letter-spacing:-.3px}
 .brand h1 .dot{color:var(--tomato)}
-.weeklabel{font-size:13px; font-weight:700; color:var(--muted)}
 #modebanner{
   display:none; margin-top:6px; font-size:12px; font-weight:700;
   background:#FCE9D8; color:var(--rust); border-radius:8px; padding:5px 9px;
@@ -50,7 +49,7 @@ header{
 
 main{max-width:520px; margin:0 auto}
 .view{display:none; padding:8px 18px 24px}
-body[data-tab="week"] #view-week, body[data-tab="wheel"] #view-wheel,
+body[data-tab="week"] #view-week,
 body[data-tab="recipes"] #view-recipes, body[data-tab="ideas"] #view-ideas{display:block}
 h2{font-size:17px; font-weight:900; margin:18px 0 10px}
 h2 small{font-weight:700; color:var(--muted); font-size:12px}
@@ -80,7 +79,7 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
 .cookbtn.done{background:transparent; color:var(--basil); padding:4px 0}
 .rmbtn{color:var(--muted); font-size:12px; font-weight:700}
 .slot.empty .fill{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-.spinlink{background:var(--tomato); color:#fff; font-weight:800; font-size:13px; border-radius:10px; padding:8px 14px}
+.pickbtn{background:var(--tomato); color:#fff; font-weight:800; font-size:13px; border-radius:10px; padding:8px 14px}
 .picklink{color:var(--tomato); font-weight:800; font-size:13px}
 .slotlabel{font-size:11px; font-weight:800; color:var(--muted); letter-spacing:.4px}
 .newweekbtn{
@@ -100,33 +99,10 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
 .extrarow{display:flex; gap:8px; margin-top:10px}
 .extrarow input[type=text]{flex:1; border:1px solid var(--line); border-radius:10px; padding:9px 12px; background:#fff}
 .addextra{background:var(--saffron); color:var(--ink); font-weight:900; border-radius:10px; padding:0 14px}
-.shopempty{color:var(--muted); font-weight:700; font-size:14px}
 .rmitem{color:var(--muted); font-weight:800; font-size:15px; padding:2px 8px}
 .clearlisttop{background:#FCE9D8; color:var(--tomato); font-weight:800; font-size:12px; border-radius:8px; padding:6px 10px; white-space:nowrap}
 
-/* wheel */
-#wheelwrap{display:flex; flex-direction:column; align-items:center; padding-top:6px}
-#wheelbox{position:relative; width:min(86vw,340px); height:min(86vw,340px)}
-#pointer{
-  position:absolute; top:-6px; left:50%; transform:translateX(-50%); z-index:3;
-  width:0; height:0; border-left:13px solid transparent; border-right:13px solid transparent;
-  border-top:22px solid var(--ink); filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));
-}
-#wheelrot{width:100%; height:100%; transition:transform 4.2s cubic-bezier(.12,.65,.06,1)}
-@media (prefers-reduced-motion: reduce){ #wheelrot{transition-duration:.6s} }
-#wheelhub{
-  position:absolute; inset:0; margin:auto; width:64px; height:64px; border-radius:50%;
-  background:var(--card); border:3px solid var(--ink); z-index:2;
-  display:flex; align-items:center; justify-content:center; font-size:26px;
-}
-#spinbtn{
-  margin-top:20px; background:var(--tomato); color:#fff; font-size:19px; font-weight:900;
-  border-radius:16px; padding:14px 44px; box-shadow:0 4px 0 var(--tomato-dk);
-}
-#spinbtn:active{transform:translateY(2px); box-shadow:0 2px 0 var(--tomato-dk)}
-#spinbtn:disabled{opacity:.45; box-shadow:none}
-.wheelnote{margin-top:10px; font-size:13px; font-weight:700; color:var(--muted); text-align:center}
-.filters{display:flex; gap:8px; justify-content:center; margin:14px 0 4px; flex-wrap:wrap}
+/* filter chips */
 .chip{
   border:1px solid var(--line); background:var(--card); border-radius:99px;
   padding:6px 13px; font-weight:800; font-size:13px; color:var(--muted);
@@ -164,19 +140,6 @@ h2 small{font-weight:700; color:var(--muted); font-size:12px}
 .empty-ideas{color:var(--muted); font-weight:700; text-align:center; padding:26px 10px}
 .ideasearch{width:100%; border:1px solid var(--line); border-radius:12px; padding:11px 14px; background:#fff; margin-bottom:6px}
 .ideaacts{display:flex; flex-direction:column; gap:6px; align-items:flex-end}
-.idea .selbtn{background:#F4E8C2; color:var(--ink); font-weight:800; font-size:12px; border-radius:9px; padding:7px 11px; white-space:nowrap}
-.idea .selbtn.on{background:var(--basil); color:#fff}
-.idea .selbtn:disabled{opacity:.4}
-.idea.picked{border-color:var(--basil); box-shadow:0 0 0 1px var(--basil), var(--shadow)}
-.shortlistbar{
-  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
-  background:#E9F3EC; border:1px solid #BEE0C8; border-radius:12px; padding:9px 12px; margin-bottom:10px;
-}
-.shortlistbar .slcount{font-weight:800; font-size:13px; color:var(--basil)}
-.shortlistbar .slacts{display:flex; gap:8px; align-items:center}
-.shortlistbar .slspin{background:var(--basil); color:#fff; font-weight:800; font-size:13px; border-radius:9px; padding:7px 12px}
-.shortlistbar .slclear{color:var(--muted); font-weight:800; font-size:12px}
-.filters .shortnote{font-weight:800; font-size:13px; color:var(--basil); align-self:center}
 
 /* recipes */
 #newrname, #newrings{margin-top:8px}
@@ -234,7 +197,7 @@ nav button{
   font-size:11px; font-weight:800; color:var(--muted); border-radius:12px; padding:7px 0;
 }
 nav button .ico{font-size:22px; line-height:1}
-body[data-tab="week"] nav .t-week, body[data-tab="wheel"] nav .t-wheel,
+body[data-tab="week"] nav .t-week,
 body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{color:var(--ink); background:#F4E8C2}
 
 /* overlays */
@@ -244,22 +207,13 @@ body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{col
 }
 .overlay.show{display:flex}
 .sheet{
-  position:relative;
   background:var(--card); border-radius:22px 22px 0 0; width:100%; max-width:520px;
   padding:24px 22px calc(28px + env(safe-area-inset-bottom)); text-align:center;
 }
-.sheetclose{
-  position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%;
-  background:#F0E7D6; color:var(--muted); font-size:18px; font-weight:900; line-height:1;
-  display:flex; align-items:center; justify-content:center;
-}
 .sheet h3{margin:0 0 6px; font-size:20px; font-weight:900}
 .sheet p{margin:4px 0 14px; color:var(--muted); font-weight:700; font-size:14px}
-.bigemoji{font-size:56px; margin:6px 0}
 .sheetbtns{display:flex; flex-direction:column; gap:10px; margin-top:8px}
 .sheetbtns .primary{background:var(--basil); color:#fff; font-weight:900; font-size:16px; border-radius:14px; padding:14px}
-.sheetbtns .danger{background:#FCE9D8; color:var(--tomato); font-weight:900; font-size:15px; border-radius:14px; padding:13px}
-.sheetbtns .quiet{color:var(--muted); font-weight:800; padding:8px}
 .whorow{display:flex; gap:12px; margin-top:14px}
 .whorow button{
   flex:1; border-radius:16px; padding:20px 10px; font-size:17px; font-weight:900; color:#fff;
@@ -282,7 +236,6 @@ body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{col
 <header>
   <div class="brand">
     <h1>Dinner Wheel<span class="dot">.</span></h1>
-    <span class="weeklabel" id="weeklabel"></span>
   </div>
   <div id="modebanner">Single-phone mode. Shared sync is off until Firebase is set up (see the README).</div>
 </header>
@@ -301,19 +254,6 @@ body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{col
       <button class="clearlisttop" id="clearlistbtn" data-act="clearlist" style="display:none">Clear list</button>
     </div>
     <div class="shopcard" id="shopcard"></div>
-  </section>
-
-  <section class="view" id="view-wheel">
-    <div class="filters" id="wheelfilters"></div>
-    <div id="wheelwrap">
-      <div id="wheelbox">
-        <div id="pointer"></div>
-        <div id="wheelrot"><svg id="wheelsvg" viewBox="-170 -170 340 340" width="100%" height="100%"></svg></div>
-        <div id="wheelhub">🍽️</div>
-      </div>
-      <button id="spinbtn">SPIN</button>
-      <div class="wheelnote" id="wheelnote"></div>
-    </div>
   </section>
 
   <section class="view" id="view-recipes">
@@ -342,14 +282,12 @@ body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{col
     </div>
     <h2>The idea bank <small id="bankcount"></small></h2>
     <input type="text" id="ideasearch" class="ideasearch" placeholder="🔎 Search ideas" maxlength="40" autocomplete="off">
-    <div id="shortlistbar" class="shortlistbar" style="display:none"></div>
     <div id="ideas"></div>
   </section>
 </main>
 
 <nav>
   <button class="t-week" data-tab="week"><span class="ico">🍽️</span>This week</button>
-  <button class="t-wheel" data-tab="wheel"><span class="ico">🎡</span>Wheel</button>
   <button class="t-recipes" data-tab="recipes"><span class="ico">📖</span>Recipes</button>
   <button class="t-ideas" data-tab="ideas"><span class="ico">💡</span>Ideas</button>
 </nav>
@@ -374,19 +312,6 @@ body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{col
   </div>
 </div>
 
-<div class="overlay" id="result-overlay">
-  <div class="sheet">
-    <button class="sheetclose" id="res-close" aria-label="Close">✕</button>
-    <div class="bigemoji" id="res-emoji"></div>
-    <h3 id="res-title"></h3>
-    <p id="res-sub"></p>
-    <div class="sheetbtns">
-      <button class="primary" id="res-ok">Keep it</button>
-      <button class="danger" id="res-veto"></button>
-    </div>
-  </div>
-</div>
-
 <div id="toast"></div>
 
 <script>
@@ -397,11 +322,9 @@ body[data-tab="recipes"] nav .t-recipes, body[data-tab="ideas"] nav .t-ideas{col
 var EFFORTS = ['quick','standard','involved'];
 var EFFORT_ICON = { quick:'🟢', standard:'🟡', involved:'🔴' };
 var EFFORT_MIGRATE = { normal:'standard', fancy:'involved' };  // old labels -> renamed tiers
-var WEDGE = ['#E14B32','#F0A62B','#2E7D46','#3E6FB0','#8A4E85','#B85C38'];
+var CONFETTI = ['#E14B32','#F0A62B','#2E7D46','#3E6FB0','#8A4E85','#B85C38'];
 var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-var RECENT_MS = 14*24*60*60*1000;
-var NAMES = { mark:'Mark', jenny:'Jenny', wheel:'the wheel' };
-var SHORTLIST_MAX = 5;
+var NAMES = { mark:'Mark', jenny:'Jenny', wheel:'the app' };
 
 /* Recipe sources we actually cook from. `key` is what gets stored on a recipe
    (never recomputed), `hosts` only seeds the guess when a link is pasted — the
@@ -445,8 +368,6 @@ var SEED_IDEAS = [
 /* ---------- state ---------- */
 var state = null;
 var user = localStorage.getItem('dw-user') || '';
-var wheelState = { spinning:false, candidates:[], angle:0, efforts:[], includeRecent:false, excludeId:null };
-var pendingResult = null;   // {ideaId, slotIdx}
 var recipeFilter = '';      // source key, '' = all
 var openRecipeId = null;    // recipe to open + scroll to on the next render
 var rolling = false;
@@ -459,11 +380,6 @@ function weekKey(d){
   var wd = (x.getDay()+6)%7;
   x.setDate(x.getDate()-wd);
   return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
-}
-function weekLabel(key){
-  var p = key.split('-');
-  var d = new Date(+p[0], +p[1]-1, +p[2]);
-  return 'Week of ' + d.getDate() + ' ' + d.toLocaleDateString('en-AU',{month:'short'});
 }
 function monthKey(d){
   var x = d ? new Date(d) : new Date();
@@ -497,13 +413,6 @@ function slots(){ return week().slots || {}; }
 function slot(i){ return slots()[String(i)] || null; }
 function shop(){ return (state && state.shop) || {}; }
 function extras(){ return (state && state.extras) || {}; }
-function vetoUsed(who){ return !!(week().veto && week().veto[who]); }
-function shortlist(){ return week().shortlist || {}; }
-function shortlistIds(){
-  var sl = shortlist(), out = [];
-  Object.keys(sl).forEach(function(id){ if (sl[id] && ideas()[id]) out.push(id); });  // drop deleted ideas
-  return out;
-}
 function plannedIds(){
   var w = week(), out = {};
   for (var i=0;i<w.slotCount;i++){ var s=slot(i); if (s && s.ideaId) out[s.ideaId]=true; }
@@ -731,7 +640,7 @@ function confetti(big){
   for (var i=0;i<n;i++){
     var el = document.createElement('div');
     el.className = 'confetti';
-    el.style.background = WEDGE[i % WEDGE.length];
+    el.style.background = CONFETTI[i % CONFETTI.length];
     document.body.appendChild(el);
     var x0 = window.innerWidth/2, y0 = window.innerHeight*0.3;
     var dx = (Math.random()-0.5)*window.innerWidth*0.9;
@@ -765,11 +674,7 @@ function migrateEfforts(){
 function render(){
   if (!state) return;
   migrateEfforts();
-  renderHeader(); renderWeek(); renderWheel(); renderRecipes(); renderIdeas();
-}
-
-function renderHeader(){
-  document.getElementById('weeklabel').textContent = weekLabel(week().key);
+  renderWeek(); renderRecipes(); renderIdeas();
 }
 
 function renderWeek(){
@@ -819,8 +724,8 @@ function renderWeek(){
       html += '<div class="slot empty" data-i="'+i+'">'
         + '<div class="body"><div class="slotlabel">MEAL '+(i+1)+'</div>'
         + '<div class="fill" style="margin-top:6px">'
-        +   '<button class="spinlink" data-act="gospin">🎡 Spin for it</button>'
-        +   '<button class="picklink" data-act="gopick">or pick one</button>'
+        +   '<button class="pickbtn" data-act="gopick">💡 Pick an idea</button>'
+        +   '<button class="picklink" data-act="gorecipe">or a recipe</button>'
         + '</div></div></div>';
     }
   }
@@ -855,7 +760,6 @@ function renderWeek(){
     });
   }
   var hasAny = items.length || exKeys.length;
-  if (!shopHtml) shopHtml = '<div class="shopempty">Add items below and your shopping list builds itself.</div>';
   shopHtml += '<div class="extrarow"><input type="text" id="extrainput" placeholder="Add extra item (milk, bread...)" maxlength="40"><button class="addextra" data-act="addextra">Add</button></div>';
   document.getElementById('shopcard').innerHTML = shopHtml;
   var clearBtn = document.getElementById('clearlistbtn');
@@ -867,177 +771,22 @@ function renderWeek(){
   document.getElementById('shopcount').textContent = total ? (done+'/'+total+' in the trolley') : '';
 }
 
-/* ---------- wheel ---------- */
-function wheelCandidates(){
-  var planned = plannedIds();
-  /* if the user has hand-picked a shortlist, the wheel spins ONLY those
-     (minus any already planned or just-vetoed) and ignores the tier/recent
-     filters — they chose these deliberately. */
-  var sl = shortlistIds();
-  if (sl.length){
-    var poolS = sl.filter(function(id){
-      return !planned[id] && wheelState.excludeId !== id;
-    }).map(function(id){ return { id:id, idea:ideas()[id] }; });
-    poolS.totalPool = poolS.length;
-    return poolS;
-  }
-  var all = Object.keys(ideas()).map(function(id){ var o = ideas()[id]; return { id:id, idea:o }; });
-  var pool = all.filter(function(e){
-    if (planned[e.id]) return false;
-    if (wheelState.excludeId === e.id) return false;   // just-vetoed meal sits the respin out
-    if (wheelState.efforts.length && wheelState.efforts.indexOf(e.idea.effort||'standard') === -1) return false;
-    if (!wheelState.includeRecent && e.idea.last && (Date.now()-e.idea.last) < RECENT_MS) return false;
-    return true;
-  });
-  var totalPool = pool.length;
-  if (pool.length > 12){
-    pool.sort(function(a,b){ return (a.idea.last||0)-(b.idea.last||0); });
-    pool = pool.slice(0,12);
-  }
-  pool.totalPool = totalPool;
-  return pool;
-}
-
-function renderWheel(){
-  /* filters */
-  var slN = shortlistIds().length;
-  var f;
-  if (slN){
-    /* shortlist active: tier/recent filters don't apply, offer a way out */
-    f = '<div class="shortnote">🎯 Spinning your shortlist · '+slN+' meal'+(slN>1?'s':'')+'</div>'
-      + '<button class="chip" data-act="clearshort">use full bank</button>';
-  } else {
-    var effs = wheelState.efforts;
-    f = '<button class="chip '+(effs.length===0?'on':'')+'" data-eff="">all</button>';
-    EFFORTS.forEach(function(e){
-      f += '<button class="chip '+(effs.indexOf(e)!==-1?'on':'')+'" data-eff="'+e+'">'+EFFORT_ICON[e]+' '+e+'</button>';
-    });
-    f += '<button class="chip '+(wheelState.includeRecent?'on':'')+'" data-act="recent">include recent</button>';
-  }
-  document.getElementById('wheelfilters').innerHTML = f;
-
-  // don't rebuild mid-spin, and keep the winning layout visible under the result sheet
-  if (wheelState.spinning || document.getElementById('result-overlay').classList.contains('show')) return;
-
-  var cands = wheelCandidates();
-  wheelState.candidates = cands;
-  var svg = document.getElementById('wheelsvg');
-  var n = cands.length;
-  var note = document.getElementById('wheelnote');
-  var btn = document.getElementById('spinbtn');
-  var empty = nextEmpty();
-
-  if (n < 2){
-    svg.innerHTML = '<circle r="160" fill="#F4E8C2"/><text y="6" text-anchor="middle" font-size="15" font-weight="800" fill="#94805F">Need at least 2 ideas to spin</text>';
-    btn.disabled = true;
-    note.textContent = 'Add more meal ideas (or include recent ones) to fill the wheel.';
-    return;
-  }
-  if (empty === -1){
-    btn.disabled = true;
-    note.textContent = 'Week is full. Nice work — see you next week.';
-  } else {
-    btn.disabled = false;
-    var mine = vetoUsed(user) ? 'used' : 'ready';
-    note.textContent = 'Spin locks the meal into slot '+(empty+1)+'. Your veto: '+mine
-      + (cands.totalPool > n ? ' · showing '+n+' of '+cands.totalPool : '');
-  }
-
-  var wA = 360/n, parts = '';
-  for (var i=0;i<n;i++){
-    var a0 = (i*wA - 90) * Math.PI/180, a1 = ((i+1)*wA - 90) * Math.PI/180;
-    var R = 160;
-    var x1 = R*Math.cos(a0), y1 = R*Math.sin(a0), x2 = R*Math.cos(a1), y2 = R*Math.sin(a1);
-    var color = WEDGE[i % WEDGE.length];
-    if (i === n-1 && n % WEDGE.length === 1 && n > 1) color = WEDGE[2]; // avoid same color touching wedge 0
-    parts += '<path d="M0,0 L'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+R+','+R+' 0 '+(wA>180?1:0)+',1 '+x2.toFixed(1)+','+y2.toFixed(1)+' Z" fill="'+color+'" stroke="#FFFDF6" stroke-width="2"/>';
-    var mid = i*wA + wA/2;
-    var midRad = (mid-90)*Math.PI/180;
-    var tr = 100, tx = tr*Math.cos(midRad), ty = tr*Math.sin(midRad);
-    var label = cands[i].idea.name;
-    var fs = n<=6 ? 14 : (n<=9 ? 12 : 10.5);
-    var maxCh = n<=6 ? 16 : 13;
-    if (label.length > maxCh) label = Array.from(label).slice(0,maxCh-1).join('')+'…';
-    parts += '<text x="'+tx.toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" dominant-baseline="middle" font-size="'+fs+'" font-weight="800" fill="#FFFDF6" transform="rotate('+mid.toFixed(1)+' '+tx.toFixed(1)+' '+ty.toFixed(1)+')">'+esc(cands[i].idea.emoji)+' '+esc(label)+'</text>';
-  }
-  svg.innerHTML = parts;
-  document.getElementById('wheelrot').style.transform = 'rotate('+wheelState.angle+'deg)';
-}
-
-function spin(){
-  if (wheelState.spinning) return;
-  var cands = wheelState.candidates;
-  var slotIdx = nextEmpty();
-  if (cands.length < 2 || slotIdx === -1) return;
-  wheelState.spinning = true;
-  document.getElementById('spinbtn').disabled = true;
-
-  var n = cands.length, wA = 360/n;
-  var pick = Math.floor(Math.random()*n);
-  var jitter = (Math.random()-0.5) * wA * 0.6;
-  var current = wheelState.angle % 360;
-  var target = wheelState.angle - current           // back to 0
-    + 360*5                                          // five full turns
-    + (360 - (pick*wA + wA/2)) + jitter;             // land pointer on pick
-  wheelState.angle = target;
-  var rot = document.getElementById('wheelrot');
-  rot.style.transform = 'rotate('+target+'deg)';
-
-  var chosen = cands[pick];
-  var fallback = setTimeout(done, 4600);   // in case transitionend never fires
-  rot.addEventListener('transitionend', done, { once:true });
-
-  function done(){
-    clearTimeout(fallback);
-    /* if the fallback fired, the once-listener is still attached and would
-       replay this spin's stale closure during the NEXT spin — detach it */
-    rot.removeEventListener('transitionend', done);
-    if (!wheelState.spinning) return;
-    wheelState.spinning = false;
-    /* re-check: the other phone may have filled the slot, planned this idea,
-       or deleted it while the wheel was spinning */
-    var idx = nextEmpty();
-    if (idx === -1 || !ideas()[chosen.id] || plannedIds()[chosen.id]){
-      toast('Plans changed mid-spin — spin again');
-      renderWheel();
-      return;
-    }
-    lockIn(chosen.id, idx, true);
-  }
-}
-
-function lockIn(ideaId, slotIdx, fromSpin){
+/* ---------- planning a slot ---------- */
+function lockIn(ideaId, slotIdx){
   var w = week();
   var wasLast = true;
   for (var i=0;i<w.slotCount;i++){
     if (i !== slotIdx && !slotFilled(i)){ wasLast = false; break; }
   }
-  var bonus = wasLast && !w.bonus;   // +5 only once per week (veto/swap can't farm it)
+  var bonus = wasLast && !w.bonus;   // celebrate a full week once, not on every swap
   var idea = ideas()[ideaId];
-  if (fromSpin){
-    /* show the sheet BEFORE patching so the render it triggers leaves the
-       winning wheel layout frozen underneath (renderWheel skips while open) */
-    pendingResult = { ideaId: ideaId, slotIdx: slotIdx };
-    document.getElementById('res-emoji').textContent = idea ? idea.emoji : '🍽️';
-    document.getElementById('res-title').textContent = idea ? idea.name : '';
-    document.getElementById('res-sub').textContent = 'Locked into Meal '+(slotIdx+1)+'.'+(wasLast?' That\'s the week planned!':'');
-    var veto = document.getElementById('res-veto');
-    if (user && !vetoUsed(user)){
-      veto.style.display = '';
-      veto.textContent = 'Veto it (your 1 for the week)';
-    } else {
-      veto.style.display = 'none';
-    }
-    document.getElementById('result-overlay').classList.add('show');
-  }
   var patch = {};
   patch['week/slots/'+slotIdx] = { ideaId: ideaId };
   if (bonus) patch['week/bonus'] = true;
   Store.patch(patch);
-  wheelState.excludeId = null;
   confetti(wasLast);
   if (bonus) toast('That\'s the week planned! 🎉');
-  else if (!fromSpin) toast((idea?idea.name:'Meal')+' → Meal '+(slotIdx+1));
+  else toast((idea?idea.name:'Meal')+' → Meal '+(slotIdx+1));
   render();
 }
 
@@ -1072,8 +821,6 @@ function renderIdeas(){
     : (list.length ? list.length+' ideas' : '');
   var planned = plannedIds();
   var canPlan = nextEmpty() !== -1;
-  var sl = shortlist();
-  var slFull = shortlistIds().length >= SHORTLIST_MAX;
   var html = '';
   shown.forEach(function(e){
     var o = e.idea;
@@ -1081,16 +828,12 @@ function renderIdeas(){
     var meta = '<span class="byline '+esc(by)+'">'+esc(NAMES[by]||by)+'</span> · '+EFFORT_ICON[o.effort||'standard']
       + ' · ' + (o.cooked ? 'cooked '+o.cooked+'× · '+agoLabel(o.last) : 'never cooked');
     var inWeek = planned[e.id];
-    var picked = !!sl[e.id];
     var rec = recipeOfIdea(o);
-    html += '<div class="idea'+(picked?' picked':'')+'" data-id="'+e.id+'">'
+    html += '<div class="idea" data-id="'+e.id+'">'
       + '<div class="idearow">'
       +   '<div class="emoji">'+esc(o.emoji)+'</div>'
       +   '<div class="body" data-act="toggle"><div class="name">'+(rec?'📖 ':'')+esc(o.name)+'</div><div class="meta">'+meta+'</div></div>'
       +   '<div class="ideaacts">'
-      +     (inWeek
-              ? '<button class="selbtn" disabled>on the menu</button>'
-              : '<button class="selbtn'+(picked?' on':'')+'" data-act="sel"'+((!picked&&slFull)?' disabled':'')+'>'+(picked?'✓ on wheel':'🎡 add to wheel')+'</button>')
       +     (inWeek
               ? '<button class="planbtn" disabled>planned</button>'
               : '<button class="planbtn" data-act="plan" '+(canPlan?'':'disabled')+'>+ this week</button>')
@@ -1110,19 +853,6 @@ function renderIdeas(){
   });
   var emptyMsg = q ? 'No ideas match "'+esc(q)+'".' : 'No ideas yet. Add the first one below.';
   document.getElementById('ideas').innerHTML = html || '<div class="empty-ideas">'+emptyMsg+'</div>';
-
-  /* shortlist summary bar */
-  var slCount = shortlistIds().length;
-  var bar = document.getElementById('shortlistbar');
-  if (slCount){
-    bar.style.display = '';
-    bar.innerHTML = '<span class="slcount">🎡 '+slCount+' of '+SHORTLIST_MAX+' on the wheel</span>'
-      + '<span class="slacts"><button class="slspin" data-act="gowheel">Spin these →</button>'
-      + '<button class="slclear" data-act="clearshort">clear</button></span>';
-  } else {
-    bar.style.display = 'none';
-    bar.innerHTML = '';
-  }
 
   Object.keys(openEdits).forEach(function(id){
     var c = document.querySelector('#ideas .idea[data-id="'+id+'"]');
@@ -1300,9 +1030,9 @@ function addRecipe(){
     name:name, emoji:emoji, url:url, source:sourceFor(url),
     ings:ings, notes:'', serves:'', by:user||'wheel', at:now
   };
-  /* every recipe needs a spinnable idea behind it — adopt a matching one if
-     it's free, otherwise make a new one. `ings` is mirrored so the shopping
-     list (which only ever reads ideas) needs no changes at all. */
+  /* every recipe needs an idea behind it — that's what a week slot points at.
+     Adopt a matching one if it's free, otherwise make a new one. `ings` is
+     mirrored so the shopping list, which only reads ideas, just works. */
   var iid = findFreeIdeaByName(name), adopted = !!iid;
   if (adopted){
     patch['ideas/'+iid+'/recipeId'] = rid;
@@ -1341,15 +1071,12 @@ document.getElementById('view-week').addEventListener('click', function(ev){
   if (!b) return;
   var act = b.dataset.act, i = +b.dataset.i;
   if (act === 'newweek'){
-    if (!confirm('Start next week? This clears the current dinners and cooked ticks so you can plan the week ahead. Your idea bank, shortlist and shopping list stay.')) return;
-    var nw = freshWeekAt(nextWeekKey(), week().slotCount);
-    var sl = week().shortlist;
-    if (sl) nw.shortlist = sl;   // shortlist is next week's working set — carry it forward, don't wipe it
-    Store.patch({ 'week': nw });
+    if (!confirm('Start next week? This clears the current dinners and cooked ticks so you can plan the week ahead. Your idea bank, recipes and shopping list stay.')) return;
+    Store.patch({ 'week': freshWeekAt(nextWeekKey(), week().slotCount) });
     toast('Fresh week — plan away 🗓️');
   }
-  else if (act === 'gospin'){ document.body.dataset.tab = 'wheel'; }
   else if (act === 'gopick'){ document.body.dataset.tab = 'ideas'; }
+  else if (act === 'gorecipe'){ document.body.dataset.tab = 'recipes'; }
   else if (act === 'day'){
     var s = slot(i); if (!s) return;
     var cur = s.day ? DAYS.indexOf(s.day) : -1;
@@ -1419,48 +1146,6 @@ document.getElementById('view-week').addEventListener('change', function(ev){
   }
 });
 
-document.getElementById('wheelfilters').addEventListener('click', function(ev){
-  var b = ev.target.closest('button');
-  if (!b || wheelState.spinning) return;
-  if (b.dataset.act === 'clearshort'){ Store.patch({ 'week/shortlist': null }); return; }
-  if (b.dataset.act === 'recent') wheelState.includeRecent = !wheelState.includeRecent;
-  else if (b.dataset.eff !== undefined){
-    var e = b.dataset.eff;
-    if (e === ''){ wheelState.efforts = []; }   // "all" clears the tier filter
-    else {
-      var idx = wheelState.efforts.indexOf(e);
-      if (idx === -1) wheelState.efforts.push(e);   // toggle this tier on
-      else wheelState.efforts.splice(idx, 1);       // ...or off
-    }
-  }
-  renderWheel();
-});
-document.getElementById('spinbtn').addEventListener('click', spin);
-
-function keepResult(){
-  document.getElementById('result-overlay').classList.remove('show');
-  pendingResult = null;
-  renderWheel();
-}
-document.getElementById('res-ok').addEventListener('click', keepResult);
-document.getElementById('res-close').addEventListener('click', keepResult);
-document.getElementById('res-veto').addEventListener('click', function(){
-  if (!pendingResult || !user || vetoUsed(user)) return;
-  var pr = pendingResult; pendingResult = null;
-  wheelState.excludeId = pr.ideaId;   // don't re-land the meal they just vetoed
-  Store.patch({ ['week/slots/'+pr.slotIdx]: null, ['week/veto/'+user]: true });
-  document.getElementById('result-overlay').classList.remove('show');
-  setTimeout(function(){
-    renderWheel();
-    if (wheelState.candidates.length < 2 || nextEmpty() === -1){
-      toast('Vetoed. Not enough meals left to respin — pick one from Ideas.');
-      return;
-    }
-    toast('Vetoed. Spinning again...');
-    spin();
-  }, 500);
-});
-
 /* ----- recipes tab ----- */
 document.getElementById('newurl').addEventListener('input', function(){
   var badge = document.getElementById('srcbadge');
@@ -1510,7 +1195,7 @@ document.getElementById('recipes').addEventListener('click', function(ev){
         by:user||'wheel', at:Date.now(), cooked:0, last:0, recipeId:id
       }});
     }
-    lockIn(iid, idx, false);
+    lockIn(iid, idx);
   }
   else if (act === 'rsave'){
     var name = card.querySelector('.e-name').value.trim().slice(0,40);
@@ -1555,12 +1240,6 @@ document.getElementById('neweffort').addEventListener('click', function(ev){
   renderIdeas();
 });
 document.getElementById('ideasearch').addEventListener('input', renderIdeas);
-document.getElementById('shortlistbar').addEventListener('click', function(ev){
-  var b = ev.target.closest('[data-act]');
-  if (!b) return;
-  if (b.dataset.act === 'gowheel'){ document.body.dataset.tab = 'wheel'; renderWheel(); }
-  else if (b.dataset.act === 'clearshort'){ Store.patch({ 'week/shortlist': null }); }
-});
 document.getElementById('addbtn').addEventListener('click', addIdea);
 document.getElementById('newname').addEventListener('keydown', function(ev){
   if (ev.key === 'Enter') addIdea();
@@ -1573,15 +1252,10 @@ document.getElementById('ideas').addEventListener('click', function(ev){
   if (!b) return;
   var act = b.dataset.act;
   if (act === 'toggle'){ card.classList.toggle('open'); }
-  else if (act === 'sel'){
-    var has = !!shortlist()[id];
-    if (!has && shortlistIds().length >= SHORTLIST_MAX){ toast('Pick up to '+SHORTLIST_MAX+' for the wheel'); return; }
-    Store.patch({ ['week/shortlist/'+id]: has ? null : true });
-  }
   else if (act === 'plan'){
     var idx = nextEmpty();
     if (idx === -1) return;
-    lockIn(id, idx, false);
+    lockIn(id, idx);
   }
   else if (act === 'save'){
     var name = card.querySelector('.e-name').value.trim();

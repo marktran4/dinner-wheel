@@ -1,10 +1,9 @@
 # Dinner Wheel 🎡
 
-A tiny web app for Mark + Jenny: dump meal ideas into a shared bank, pick how many
-dinners to plan this week (2, 3 or 4), then spin the wheel to decide. The spin
-**locks in** the meal — each person gets one veto per week, that's the game.
-A library of the recipes you actually cook from and a combined shopping list so
-the week is visible before the shop.
+A tiny web app for Mark + Jenny: dump meal ideas into a shared bank, keep a
+library of the recipes you actually cook from, and plan 2, 3 or 4 dinners for
+the week. A combined shopping list builds itself from what's planned, so the
+week is visible before the shop.
 
 **Live app:** https://marktran4.github.io/dinner-wheel/
 
@@ -18,12 +17,10 @@ the week is visible before the shop.
 
 - **Ideas tab** — add meal ideas. Tap an idea to edit or delete it, or
   **Promote to recipe** to give it a link and an ingredient list.
-- **This week tab** — pick 2/3/4 dinner slots. Fill a slot by spinning or picking.
-  Tap the day chip to assign a day. Hit **Cooked it** when it's done. A meal with
-  a recipe shows a 📖 chip that opens the recipe in one tap.
-- **Wheel tab** — spin to fill the next empty slot. The result locks in unless
-  you spend your one weekly veto. Meals cooked in the last 2 weeks sit out
-  unless you turn on "include recent".
+- **This week tab** — pick 2/3/4 dinner slots, then fill each one from your
+  ideas or your recipes. Tap the day chip to assign a day. Hit **Cooked it**
+  when it's done. A meal with a recipe shows a 📖 chip that opens the recipe
+  in one tap.
 - **Recipes tab** — the library. Paste a link from RecipeTin Eats, Hot Thai
   Kitchen, Maangchi, My Korean Kitchen, Vicky Pham, Viet World Kitchen or
   Helen's Recipes and it works out the source and suggests a name; add the
