@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Nomi. A steaming bowl. Full-bleed so it works as a maskable icon:
+       every shape sits inside the safe circle (r=205 from centre). -->
+  <rect width="512" height="512" fill="#E14B32"/>
+
+  <!-- steam: bigger and closer in than a literal wisp, so it still reads at 60px -->
+  <g fill="none" stroke="#FFF3CF" stroke-width="20" stroke-linecap="round" opacity=".95">
+    <path d="M206 196c-26-26 18-45-7-72"/>
+    <path d="M306 196c-26-26 18-45-7-72"/>
+  </g>
+
+  <!-- bowl -->
+  <path d="M108 258h296c0 82-66 148-148 148s-148-66-148-148Z" fill="#FFF3CF"/>
+  <rect x="88" y="238" width="336" height="36" rx="18" fill="#FFF3CF"/>
+  <path d="M215 410h82" stroke="#FFF3CF" stroke-width="23" stroke-linecap="round"/>
+</svg>
