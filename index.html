@@ -500,6 +500,13 @@ function nextWeekKey(){
   d.setDate(d.getDate()+7);   // any day next calendar week -> its Monday
   return weekKey(d);
 }
+function nextPlanWeekKey(key){
+  var today = weekKey();
+  if (key < today) return today;
+  var d = new Date(key+'T12:00:00');
+  d.setDate(d.getDate()+7);
+  return weekKey(d);
+}
 function seedState(){
   var ideas = {};
   SEED_IDEAS.forEach(function(s,i){
@@ -531,11 +538,12 @@ function nextEmpty(){
 }
 
 /* ---------- storage ---------- */
-var Store = { mode:'local', ref:null };
+var Store = { mode:window.FIREBASE_CONFIG ? 'pending' : 'local', ref:null,
+  connected:false, authoritative:false, seeding:false };
 
-function applyLocalPatch(obj){
+function applyPatch(target, obj){
   Object.keys(obj).forEach(function(path){
-    var parts = path.split('/'), node = state;
+    var parts = path.split('/'), node = target;
     for (var i=0;i<parts.length-1;i++){
       if (typeof node[parts[i]] !== 'object' || node[parts[i]] === null) node[parts[i]] = {};
       node = node[parts[i]];
@@ -546,14 +554,72 @@ function applyLocalPatch(obj){
   });
 }
 
-Store.patch = function(obj){
-  if (Store.mode === 'cloud' && Store.ref){
-    Store.ref.update(obj);   // local events fire immediately (latency compensation)
-  } else {
+function applyLocalPatch(obj){ applyPatch(state, obj); }
+function stableValue(value){
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value && typeof value === 'object'){
+    var out = {};
+    Object.keys(value).sort().forEach(function(key){ out[key] = stableValue(value[key]); });
+    return out;
+  }
+  return value;
+}
+function sameValue(a,b){ return JSON.stringify(stableValue(a)) === JSON.stringify(stableValue(b)); }
+function syncBlocked(){ toast('Waiting for the shared plan to sync — try again shortly'); }
+Store.canWrite = function(){
+  return Store.mode === 'local' || !!(Store.authoritative && Store.connected && Store.ref);
+};
+
+/* Week edits compare the week the person actually saw with the server's week.
+   A second phone can change it while this transaction is in flight; Firebase
+   then retries with that newer value and we decline the stale edit. */
+function patchCloudWeek(weekPatch, otherPatch, onCommit){
+  var expected = JSON.parse(JSON.stringify(week()));
+  if (!expected.key || expected.key < weekKey()){
+    if (expected.key && !rolledWeek(expected,weekKey())){
+      toast('Older meals are kept. Start the next week when you are ready.');
+    } else { syncBlocked(); rolloverIfNeeded(); }
+    return false;
+  }
+  Store.ref.child('week').transaction(function(current){
+    if (!current || !sameValue(current,expected) || current.key < weekKey()) return;
+    var next = JSON.parse(JSON.stringify(current));
+    applyPatch(next,weekPatch);
+    return next;
+  },function(error,committed){
+    if (error){ toast('Sync failed — please try again'); return; }
+    if (!committed){ toast('The plan changed on the other phone — check it and try again'); return; }
+    if (Object.keys(otherPatch).length){
+      Store.ref.update(otherPatch).then(function(){ if (onCommit) onCommit(); })
+        .catch(function(){ toast('The plan saved, but its tally did not sync'); });
+    } else if (onCommit) onCommit();
+  },false);
+  return true;
+}
+
+Store.patch = function(obj,onCommit){
+  if (Store.mode === 'local'){
     applyLocalPatch(obj);
     localStorage.setItem('dw-state', JSON.stringify(state));
     render();
+    if (onCommit) onCommit();
+    return true;
   }
+  if (!Store.canWrite()){ syncBlocked(); return false; }
+  if (Object.prototype.hasOwnProperty.call(obj,'week')){
+    toast('The whole week can only change through a checked reset');
+    return false;
+  }
+  var weekPatch = {}, otherPatch = {};
+  Object.keys(obj).forEach(function(path){
+    if (path.indexOf('week/') === 0){
+      weekPatch[path.slice(5)] = obj[path];
+    } else otherPatch[path] = obj[path];
+  });
+  if (Object.keys(weekPatch).length) return patchCloudWeek(weekPatch,otherPatch,onCommit);
+  Store.ref.update(otherPatch).then(function(){ if (onCommit) onCommit(); })
+    .catch(function(){ toast('Sync failed — please try again'); });
+  return true;
 };
 
 function houseKey(){
@@ -570,32 +636,76 @@ function loadScript(src){
   });
 }
 
+function seedCloudIfEmpty(){
+  if (Store.seeding || !Store.connected) return;
+  Store.seeding = true;
+  var local = null;
+  try { local = JSON.parse(localStorage.getItem('dw-state')||'null'); } catch(e){}
+  /* A null listener result is not permission to set the root: it may be a
+     transient offline view. Only the transaction may create an empty house. */
+  Store.ref.transaction(function(current){
+    if (current != null) return;
+    return local || seedState();
+  },function(error,committed){
+    Store.seeding = false;
+    if (error) toast('Sync failed — please try again');
+    if (committed) localStorage.setItem('dw-merged','1');
+  },false);
+}
+
+function showCachedPlan(){
+  if (Store.authoritative) return;
+  var hasCache = !!state;
+  if (!state){
+    try { state = JSON.parse(localStorage.getItem('dw-state')||'null'); } catch(e){}
+    hasCache = !!state;
+    if (!state) state = seedState();
+  }
+  var b = document.getElementById('modebanner');
+  b.textContent = hasCache
+    ? 'Offline — showing the last saved plan. Editing resumes after sync.'
+    : 'Offline — shared plan unavailable. Editing resumes after sync.';
+  b.classList.add('show');
+  render();
+  if (!user) document.getElementById('who-overlay').classList.add('show');
+}
+
 function initCloud(key){
-  return loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js')
-    .then(function(){ return loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js'); })
+  var load = Promise.resolve();
+  if (!window.firebase) load = load.then(function(){ return loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js'); });
+  load = load.then(function(){
+    if (!firebase.database) return loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js');
+  });
+  return load
     .then(function(){
-      firebase.initializeApp(window.FIREBASE_CONFIG);
+      if (!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
       Store.ref = firebase.database().ref('mealwheel/'+key);
       Store.mode = 'cloud';
-      return new Promise(function(res){
+      return new Promise(function(res,rej){
         var first = true;
-        Store.ref.on('value', function(snap){
+        function accept(snap){
+          if (!Store.connected) return;
           var v = snap.val();
-          if (!v){
-            // brand-new database: seed it (or migrate local data if we have some)
-            var local = null;
-            try { local = JSON.parse(localStorage.getItem('dw-state')||'null'); } catch(e){}
-            localStorage.setItem('dw-merged','1');
-            Store.ref.set(local || seedState());
-            return;
-          }
+          if (!v){ seedCloudIfEmpty(); return; }
           if (first){ first = false; mergeLocalIdeas(v); }
           state = v;
+          Store.authoritative = true;
           localStorage.setItem('dw-state', JSON.stringify(state));
           document.getElementById('modebanner').classList.remove('show');
           res();
           rolloverIfNeeded();
           render();
+          if (!user) document.getElementById('who-overlay').classList.add('show');
+        }
+        Store.ref.on('value',accept,rej);
+        firebase.database().ref('.info/connected').on('value',function(snap){
+          Store.connected = snap.val() === true;
+          if (!Store.connected){
+            Store.authoritative = false;
+            if (state) showCachedPlan();
+            return;
+          }
+          Store.ref.once('value').then(accept).catch(function(){ toast('Sync unavailable — retrying'); });
         });
       });
     });
@@ -626,15 +736,66 @@ function initLocal(){
 }
 
 /* ---------- week rollover ---------- */
+function rolledWeek(current, nowKey){
+  if (!current || !current.key || current.key >= nowKey) return null;
+  var boundary = new Date(nowKey+'T00:00:00').getTime();
+  var kept = {};
+  var oldSlots = current.slots || {};
+  for (var i=0;i<MAX_SLOTS;i++){
+    var meal = oldSlots[String(i)];
+    if (!meal || !meal.ideaId) continue;
+    /* Legacy meals have no planning time. Do not guess and erase them. The
+       explicit Start next week button remains available for those plans. */
+    if (typeof meal.plannedAt !== 'number' || !isFinite(meal.plannedAt)) return null;
+    if (meal.plannedAt >= boundary) kept[i] = meal;
+  }
+  var next = freshWeekAt(nowKey);
+  if (Object.keys(kept).length) next.slots = kept;
+  return next;
+}
+
 function rolloverIfNeeded(){
   if (!state || rolling) return;
   var w = week(), nowKey = weekKey();
   // Only roll a *past* week forward. A week keyed to this week or a future
   // Monday (set by "Start next week") is a deliberate plan-ahead — never wipe it.
   if (w.key >= nowKey) return;
+  if (Store.mode !== 'local'){
+    if (!Store.authoritative || !Store.connected || !Store.ref) return;
+    rolling = true;
+    Store.ref.child('week').transaction(function(current){
+      /* This check runs again if another phone changes the week mid-flight. */
+      return rolledWeek(current,nowKey) || undefined;
+    },function(error){
+      rolling = false;
+      if (error) toast('Week sync failed — please try again');
+    },false);
+    return;
+  }
+  var next = rolledWeek(w,nowKey);
+  if (!next) return;
   rolling = true;
-  Store.patch({ 'week': freshWeek() });
+  Store.patch({ 'week': next });
   rolling = false;
+}
+
+function startNextWeek(){
+  if (Store.mode === 'local'){
+    Store.patch({ 'week': freshWeekAt(nextPlanWeekKey(week().key)) });
+    toast('Fresh week — plan away 🗓️');
+    return;
+  }
+  if (!Store.authoritative || !Store.connected || !Store.ref){ syncBlocked(); return; }
+  var expected = JSON.parse(JSON.stringify(week()));
+  var target = nextPlanWeekKey(expected.key);
+  Store.ref.child('week').transaction(function(current){
+    if (!current || !sameValue(current,expected) || current.key >= target) return;
+    return freshWeekAt(target);
+  },function(error,committed){
+    if (error) toast('Sync failed — please try again');
+    else if (committed) toast('Fresh week — plan away 🗓️');
+    else toast('The plan changed — check it before starting the next week');
+  },false);
 }
 
 /* ---------- helpers ---------- */
@@ -776,6 +937,7 @@ function confetti(big){
 
 /* ---------- migrations ---------- */
 function migrateEfforts(){
+  if (Store.mode !== 'local' && !Store.authoritative) return;
   if (!state || !state.ideas) return;
   var patch = {}, changed = false;
   Object.keys(state.ideas).forEach(function(id){
@@ -793,6 +955,7 @@ function migrateEfforts(){
 /* Names typed before the app started standardising them. Runs on render like
    the effort migration; once through, it finds nothing to do. */
 function migrateNames(){
+  if (Store.mode !== 'local' && !Store.authoritative) return;
   if (!state) return;
   var patch = {}, changed = false;
   ['ideas','recipes'].forEach(function(node){
@@ -914,13 +1077,13 @@ function lockIn(ideaId, slotIdx){
   var bonus = wasLast && !w.bonus;   // celebrate a full week once, not on every swap
   var idea = ideas()[ideaId];
   var patch = {};
-  patch['week/slots/'+slotIdx] = { ideaId: ideaId };
+  patch['week/slots/'+slotIdx] = { ideaId: ideaId, plannedAt: Date.now() };
   if (bonus) patch['week/bonus'] = true;
-  Store.patch(patch);
-  confetti(wasLast);
-  if (bonus) toast('That\'s the week planned! 🎉');
-  else toast((idea?idea.name:'Meal')+' → Meal '+(slotIdx+1));
-  render();
+  Store.patch(patch,function(){
+    confetti(wasLast);
+    if (bonus) toast('That\'s the week planned! 🎉');
+    else toast((idea?idea.name:'Meal')+' → Meal '+(slotIdx+1));
+  });
 }
 
 /* ---------- ideas ---------- */
@@ -1008,10 +1171,10 @@ function addIdea(){
   var effort = newEffort;
   var id = uid();
   newEffort = 'quick';   // reset the picker back to quick once added
-  Store.patch({ ['ideas/'+id]: {
+  if (!Store.patch({ ['ideas/'+id]: {
     name:name, emoji:pickEmoji(name), effort:effort,
     by:user||'wheel', at:Date.now(), cooked:0, last:0
-  }});
+  }})) return;
   nameEl.value='';
   toast('Added '+name);
 }
@@ -1180,7 +1343,7 @@ function addRecipe(){
       by:user||'wheel', at:now, cooked:0, last:0, recipeId:rid
     };
   }
-  Store.patch(patch);
+  if (!Store.patch(patch)) return;
   urlEl.value=''; nameEl.value=''; ingsEl.value='';
   document.getElementById('srcbadge').classList.remove('show');
   toast(adopted ? 'Linked to your existing idea ✓' : 'Added '+name);
@@ -1198,8 +1361,7 @@ document.getElementById('view-week').addEventListener('click', function(ev){
   var act = b.dataset.act, i = +b.dataset.i;
   if (act === 'newweek'){
     if (!confirm('Start next week? This clears the current dinners and cooked ticks so you can plan the week ahead. Your idea bank, recipes and shopping list stay.')) return;
-    Store.patch({ 'week': freshWeekAt(nextWeekKey()) });
-    toast('Fresh week — plan away 🗓️');
+    startNextWeek();
   }
   else if (act === 'gopick'){ document.body.dataset.tab = 'ideas'; }
   else if (act === 'gorecipe'){ document.body.dataset.tab = 'recipes'; }
@@ -1215,9 +1377,7 @@ document.getElementById('view-week').addEventListener('click', function(ev){
     var mk = monthKey(), c = state.cooks;
     var newN = ((c && c.key===mk ? c.count : 0)||0) + 1;
     patch['cooks'] = { key:mk, count:newN };
-    Store.patch(patch);
-    confetti(false);
-    toast('Cooked it! 🎉');
+    Store.patch(patch,function(){ confetti(false); toast('Cooked it! 🎉'); });
   }
   else if (act === 'uncook'){
     var s3 = slot(i); if (!s3 || !s3.ideaId || !s3.cooked) return;
@@ -1239,8 +1399,7 @@ document.getElementById('view-week').addEventListener('click', function(ev){
   else if (act === 'addextra'){
     var inp = document.getElementById('extrainput');
     var v = inp.value.trim(); if (!v) return;
-    inp.value = '';
-    Store.patch({ ['extras/'+uid()]: { name:v, done:false } });
+    if (Store.patch({ ['extras/'+uid()]: { name:v, done:false } })) inp.value = '';
   }
   else if (act === 'rmextra'){
     Store.patch({ ['extras/'+b.dataset.key]: null });
@@ -1260,9 +1419,9 @@ document.getElementById('view-week').addEventListener('change', function(ev){
   var b = ev.target.closest('[data-act]');
   if (!b) return;
   if (b.dataset.act === 'shopck'){
-    Store.patch({ ['shop/'+b.dataset.key]: b.checked ? true : null });
+    if (!Store.patch({ ['shop/'+b.dataset.key]: b.checked ? true : null })) b.checked = !b.checked;
   } else if (b.dataset.act === 'extrack'){
-    Store.patch({ ['extras/'+b.dataset.key+'/done']: b.checked });
+    if (!Store.patch({ ['extras/'+b.dataset.key+'/done']: b.checked })) b.checked = !b.checked;
   }
 });
 
@@ -1303,6 +1462,8 @@ document.getElementById('recipes').addEventListener('click', function(ev){
   var act = b.dataset.act;
   if (act === 'rtoggle'){ card.classList.toggle('open'); }
   else if (act === 'rplan'){
+    if (!Store.canWrite()){ syncBlocked(); return; }
+    if (week().key < weekKey()){ rolloverIfNeeded(); return; }
     var idx = nextEmpty();
     if (idx === -1) return;
     var r = recipes()[id]; if (!r) return;
@@ -1339,7 +1500,7 @@ document.getElementById('recipes').addEventListener('click', function(ev){
       patch['ideas/'+liid+'/name']  = name;
       patch['ideas/'+liid+'/emoji'] = pickEmoji(name);
     }
-    Store.patch(patch);
+    if (!Store.patch(patch)) return;
     card.classList.remove('open');
     toast('Saved');
   }
@@ -1386,7 +1547,7 @@ document.getElementById('ideas').addEventListener('click', function(ev){
       patch['recipes/'+ideas()[id].recipeId+'/name'] = name;
       patch['recipes/'+ideas()[id].recipeId+'/emoji'] = pickEmoji(name);
     }
-    Store.patch(patch);
+    if (!Store.patch(patch)) return;
     card.classList.remove('open');
   }
   else if (act === 'viewrecipe'){
@@ -1397,13 +1558,13 @@ document.getElementById('ideas').addEventListener('click', function(ev){
     var po = ideas()[id];
     if (!po || recipeOfIdea(po)) return;
     var prid = uid();
-    Store.patch({
+    if (!Store.patch({
       ['recipes/'+prid]: {
         name:po.name, emoji:po.emoji||pickEmoji(po.name), url:'', source:'other',
         ings:po.ings||'', notes:'', serves:'', by:user||'wheel', at:Date.now()
       },
       ['ideas/'+id+'/recipeId']: prid
-    });
+    })) return;
     jumpToRecipe(prid);
     toast('In the library — add the link \U0001F4D6');
   }
@@ -1495,43 +1656,33 @@ function boot(){
       location.reload();
     });
   }
-  var ready;
   if (window.FIREBASE_CONFIG){
     var key = houseKey();
     if (!key){
       document.getElementById('key-overlay').classList.add('show');
       return; // wait for key entry (page reloads after save)
     }
-    /* offline / flaky signal: never hang on a blank screen waiting for the
-       first database snapshot — after 4s show the last mirrored state.
-       Writes still go through the SDK, which queues and syncs on reconnect. */
-    ready = new Promise(function(resolve){
-      var settled = false;
-      var settle = function(){ if (!settled){ settled = true; resolve(); } };
-      initCloud(key).then(settle).catch(function(){
-        toast('Sync unavailable, using this phone only');
-        initLocal().then(settle);
+    /* A cached plan is useful to read while the network is slow, but it is
+       never an authority for writes or rollover. Retry SDK loading on return. */
+    var starting = false;
+    function startCloud(){
+      if (starting || Store.ref) return;
+      starting = true;
+      initCloud(key).catch(function(){
+        starting = false;
+        showCachedPlan();
       });
-      setTimeout(function(){
-        if (settled) return;
-        if (!state){
-          try { state = JSON.parse(localStorage.getItem('dw-state')||'null'); } catch(e){}
-          if (!state) state = seedState();
-        }
-        var b = document.getElementById('modebanner');
-        b.textContent = 'Offline — showing the last saved plan. It reconnects by itself.';
-        b.classList.add('show');
-        settle();
-      }, 4000);
-    });
+    }
+    startCloud();
+    window.addEventListener('online',startCloud);
+    setTimeout(function(){ if (!Store.authoritative) showCachedPlan(); },4000);
   } else {
-    ready = initLocal();
+    initLocal().then(function(){
+      rolloverIfNeeded();
+      render();
+      if (!user) document.getElementById('who-overlay').classList.add('show');
+    });
   }
-  ready.then(function(){
-    rolloverIfNeeded();
-    render();
-    if (!user) document.getElementById('who-overlay').classList.add('show');
-  });
 }
 boot();
 })();
