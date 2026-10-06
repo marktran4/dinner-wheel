@@ -31,6 +31,12 @@ planned, so the week is visible before the shop.
   ingredients and they flow onto the shopping list whenever that meal is
   planned. Filter by source, search by name, **+ this week** to plan it.
 - Weeks roll over automatically every Monday.
+- When sync is slow or offline, the last saved plan remains visible but editing
+  waits for the shared database. This prevents an old phone cache from replacing
+  a newer plan when the connection returns.
+- New meal slots record when they were planned. If an older slot has no planning
+  time, automatic rollover keeps it; use **Start next week** when ready to clear
+  that older plan. The button checks for changes from the other phone first.
 
 ## Turning on shared sync (one-time, ~10 minutes)
 
@@ -85,3 +91,6 @@ Notes:
   the two PNGs the manifest asks for.
 - Source of truth lives in `~/side-projects/meal-wheel/`;
   this repo is the deploy target for GitHub Pages.
+- Run the deterministic sync regressions with `node --test tests/sync.test.mjs`
+  from the source repo. They use an in-memory Firebase stand-in and do not
+  connect to the household database.
