@@ -1,10 +1,14 @@
 /* Nomi service worker — offline shell so the plan opens in the supermarket */
-var VERSION = 'dw-v14';
+var VERSION = 'dw-v15';
 var ASSETS = ['./', 'index.html', 'manifest.webmanifest', 'firebase-config.js', 'icon-180.png', 'icon-512.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
-    caches.open(VERSION).then(function (c) { return c.addAll(ASSETS); }).then(function () { return self.skipWaiting(); })
+    caches.open(VERSION).then(function (c) {
+      /* Fetch the new shell even if GitHub Pages' HTTP cache still has the
+         previous version. An offline upgrade must never cache old reset code. */
+      return c.addAll(ASSETS.map(function (path) { return new Request(path, { cache: 'no-store' }); }));
+    }).then(function () { return self.skipWaiting(); })
   );
 });
 
