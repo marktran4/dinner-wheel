@@ -539,7 +539,17 @@ function nextEmpty(){
 
 /* ---------- storage ---------- */
 var Store = { mode:window.FIREBASE_CONFIG ? 'pending' : 'local', ref:null,
-  connected:false, authoritative:false, seeding:false };
+  connected:false, authoritative:false, seeding:false, pendingWrites:0, onIdle:null };
+
+function beginWrite(){ Store.pendingWrites++; }
+function endWrite(){
+  Store.pendingWrites = Math.max(0,Store.pendingWrites-1);
+  if (!Store.pendingWrites && Store.onIdle){
+    var resume = Store.onIdle;
+    Store.onIdle = null;
+    resume();
+  }
+}
 
 function applyPatch(target, obj){
   Object.keys(obj).forEach(function(path){
@@ -581,18 +591,24 @@ function patchCloudWeek(weekPatch, otherPatch, onCommit){
     } else { syncBlocked(); rolloverIfNeeded(); }
     return false;
   }
+  beginWrite();
   Store.ref.child('week').transaction(function(current){
     if (!current || !sameValue(current,expected) || current.key < weekKey()) return;
     var next = JSON.parse(JSON.stringify(current));
     applyPatch(next,weekPatch);
     return next;
   },function(error,committed){
-    if (error){ toast('Sync failed — please try again'); return; }
-    if (!committed){ toast('The plan changed on the other phone — check it and try again'); return; }
+    if (error){ endWrite(); toast('Sync failed — please try again'); return; }
+    if (!committed){ endWrite(); toast('The plan changed on the other phone — check it and try again'); return; }
     if (Object.keys(otherPatch).length){
-      Store.ref.update(otherPatch).then(function(){ if (onCommit) onCommit(); })
-        .catch(function(){ toast('The plan saved, but its tally did not sync'); });
-    } else if (onCommit) onCommit();
+      Store.ref.update(otherPatch).then(function(){
+        if (onCommit) onCommit();
+        endWrite();
+      }).catch(function(){ endWrite(); toast('The plan saved, but its tally did not sync'); });
+    } else {
+      if (onCommit) onCommit();
+      endWrite();
+    }
   },false);
   return true;
 }
@@ -617,8 +633,10 @@ Store.patch = function(obj,onCommit){
     } else otherPatch[path] = obj[path];
   });
   if (Object.keys(weekPatch).length) return patchCloudWeek(weekPatch,otherPatch,onCommit);
+  beginWrite();
   Store.ref.update(otherPatch).then(function(){ if (onCommit) onCommit(); })
-    .catch(function(){ toast('Sync failed — please try again'); });
+    .catch(function(){ toast('Sync failed — please try again'); })
+    .then(endWrite);
   return true;
 };
 
@@ -643,6 +661,7 @@ function seedCloudIfEmpty(){
   try { local = JSON.parse(localStorage.getItem('dw-state')||'null'); } catch(e){}
   /* A null listener result is not permission to set the root: it may be a
      transient offline view. Only the transaction may create an empty house. */
+  beginWrite();
   Store.ref.transaction(function(current){
     if (current != null) return;
     return local || seedState();
@@ -650,6 +669,7 @@ function seedCloudIfEmpty(){
     Store.seeding = false;
     if (error) toast('Sync failed — please try again');
     if (committed) localStorage.setItem('dw-merged','1');
+    endWrite();
   },false);
 }
 
@@ -763,12 +783,14 @@ function rolloverIfNeeded(){
   if (Store.mode !== 'local'){
     if (!Store.authoritative || !Store.connected || !Store.ref) return;
     rolling = true;
+    beginWrite();
     Store.ref.child('week').transaction(function(current){
       /* This check runs again if another phone changes the week mid-flight. */
       return rolledWeek(current,nowKey) || undefined;
     },function(error){
       rolling = false;
       if (error) toast('Week sync failed — please try again');
+      endWrite();
     },false);
     return;
   }
@@ -788,6 +810,7 @@ function startNextWeek(){
   if (!Store.authoritative || !Store.connected || !Store.ref){ syncBlocked(); return; }
   var expected = JSON.parse(JSON.stringify(week()));
   var target = nextPlanWeekKey(expected.key);
+  beginWrite();
   Store.ref.child('week').transaction(function(current){
     if (!current || !sameValue(current,expected) || current.key >= target) return;
     return freshWeekAt(target);
@@ -795,6 +818,7 @@ function startNextWeek(){
     if (error) toast('Sync failed — please try again');
     else if (committed) toast('Fresh week — plan away 🗓️');
     else toast('The plan changed — check it before starting the next week');
+    endWrite();
   },false);
 }
 
@@ -1647,13 +1671,17 @@ function boot(){
       reg.update().catch(function(){});
     }).catch(function(){});
     /* A new worker taking over means the shell it serves is newer than the page
-       we're looking at. Reload once so the update is actually on screen, rather
-       than waiting for the next cold start. */
+       we're looking at. Wait for in-flight writes before reloading. */
     var refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', function(){
       if (refreshing) return;
-      refreshing = true;
-      location.reload();
+      var reload = function(){
+        if (refreshing) return;
+        refreshing = true;
+        location.reload();
+      };
+      if (Store.pendingWrites) Store.onIdle = reload;
+      else reload();
     });
   }
   if (window.FIREBASE_CONFIG){
