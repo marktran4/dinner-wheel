@@ -1423,7 +1423,12 @@ document.getElementById('view-week').addEventListener('click', function(ev){
   else if (act === 'addextra'){
     var inp = document.getElementById('extrainput');
     var v = inp.value.trim(); if (!v) return;
-    if (Store.patch({ ['extras/'+uid()]: { name:v, done:false } })) inp.value = '';
+    /* clear before patching: patch re-renders synchronously and would carry the text over */
+    inp.value = '';
+    if (!Store.patch({ ['extras/'+uid()]: { name:v, done:false } })){
+      var cur = document.getElementById('extrainput');
+      if (cur) cur.value = v;
+    }
   }
   else if (act === 'rmextra'){
     Store.patch({ ['extras/'+b.dataset.key]: null });
